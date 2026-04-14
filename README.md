@@ -64,6 +64,18 @@ It acts as a **decision-support system**, helping logistics managers take proact
 
 ---
 
+🧠 Data Strategy
+
+This project intentionally does not use a traditional database. Instead, it relies on:
+
+🌐 Real-time external APIs (Weather & Routing)
+⚡ In-memory data processing for fast decision-making
+🎯 Simulated inputs for traffic conditions
+
+This approach enables real-time intelligence, reduces system complexity, and allows rapid prototyping suitable for hackathon environments.
+
+---
+
 ## 🏗️ Project Structure
 
 ```
