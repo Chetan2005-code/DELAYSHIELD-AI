@@ -1,0 +1,64 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-[#0b1120] text-slate-200 font-sans tracking-wide antialiased overflow-x-hidden;
+    /* Deep space background to match ultra-premium feel */
+    background-image: radial-gradient(circle at top right, rgba(59, 130, 246, 0.1), transparent 400px),
+                      radial-gradient(circle at bottom left, rgba(139, 92, 246, 0.05), transparent 400px);
+  }
+}
+
+@layer components {
+  /* High-end glassmorphism base */
+  .glass-panel {
+    @apply bg-slate-900/40 backdrop-blur-xl border border-slate-700/40 rounded-2xl shadow-2xl;
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.36);
+  }
+
+  .glass-panel-hover {
+    @apply transition-all duration-300 hover:bg-slate-800/50 hover:border-slate-600/50 hover:-translate-y-1 hover:shadow-primary-500/10;
+  }
+
+  /* Upgraded buttons */
+  .btn-primary {
+    @apply px-5 py-2.5 bg-gradient-to-r from-blue-600 to-primary-500 hover:from-blue-500 hover:to-primary-400 text-white rounded-xl transition-all duration-300 font-bold active:scale-95 shadow-lg shadow-blue-500/25;
+  }
+
+  .btn-secondary {
+    @apply px-5 py-2.5 bg-slate-800/80 hover:bg-slate-700 border border-slate-700 text-white rounded-xl transition-all duration-300 font-bold active:scale-95 shadow-lg;
+  }
+}
+
+@keyframes pulse-slow {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.7;
+    transform: scale(1.02);
+  }
+}
+
+.animate-pulse-slow {
+  animation: pulse-slow 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* Scrollbar styling for that extra polish */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: transparent; 
+}
+::-webkit-scrollbar-thumb {
+  background: #334155; 
+  border-radius: 10px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #475569; 
+}
