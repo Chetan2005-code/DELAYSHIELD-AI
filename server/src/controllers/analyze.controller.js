@@ -4,6 +4,9 @@ import { getWeatherData } from "../integrations/weather.api.js";
 import { getRoute } from "../integrations/route.api.js";
 import { calculateCostImpact } from "../engine/cost/costengine.js";
 import { generateAIPlan } from "../engine/decision/aiplanner.js";
+import { explainDecision } from "../engine/decision/aiExplainer.js";
+import { generateAlert } from "../engine/alerts/alertEngine.js";
+import { addHistory } from "../engine/history/historyEngine.js";
 import { simulateTraffic } from "../utils/simulatetraffic.js";
 // ------------------------------
 // FULL PIPELINE CONTROLLER
@@ -93,20 +96,48 @@ const finalTraffic =
       aiRouteSuggestion,
     });
 
-     // ------------------------------
-    // STEP 6: AI PLANNER
+    // ------------------------------
+    // STEP 6: AI PLANNER & EXPLAINER
     // ------------------------------
     const aiResult = await generateAIPlan({
-  risk: {
-    ...riskResult,
-    traffic,
-    delay,
-  },
-  decision: decisionResult,
-  route: routeData,
-  cost: costResult,
-});
+      risk: {
+        ...riskResult,
+        traffic,
+        delay,
+      },
+      decision: decisionResult,
+      route: routeData,
+      cost: costResult,
+    });
     
+    // 🔥 Explainer
+    const explainerResult = explainDecision({
+      risk: riskResult,
+      decision: decisionResult,
+      cost: costResult
+    });
+
+    // ------------------------------
+    // STEP 7: ALERT ENGINE (🔥 NEW)
+    // ------------------------------
+    const alertResult = generateAlert({
+      risk: riskResult,
+      decision: decisionResult,
+      delay,
+      traffic: finalTraffic
+    });
+
+    // ------------------------------
+    // STEP 8: HISTORY ENGINE
+    // ------------------------------
+    const { shipmentId } = req.body; // Accept optional tracking shipment ID
+    addHistory({
+      shipmentId,
+      route: aiResult?.data?.suggestedRoute || "Unknown",
+      decision: decisionResult.action,
+      riskScore: riskResult.score
+    });
+
     // ------------------------------
     // FINAL RESPONSE
     // ------------------------------
@@ -127,6 +158,8 @@ const finalTraffic =
 
       route: routeData, // 🔥 NEW ADDITION
       cost: costResult,
+      explanation: explainerResult,
+      alert: alertResult,
       ai: aiResult?.data || null,
       timestamp: new Date().toISOString(),
     });
