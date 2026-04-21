@@ -32,7 +32,7 @@ const validateInputFields = (input) => {
 // SINGLE SIMULATION
 // ----------------------------
 
-export const runSingleSimulation = (req, res) => {
+export const runSingleSimulation = async (req, res) => {
   try {
     const { baseInput, changes } = req.body;
 
@@ -61,7 +61,7 @@ export const runSingleSimulation = (req, res) => {
 
     console.log("📊 Running single simulation:", { baseInput, changes });
 
-    const result = runSimulation(baseInput, changes);
+    const result = await runSimulation(baseInput, changes);
 
     return res.status(200).json({
       success: true,
@@ -83,9 +83,9 @@ export const runSingleSimulation = (req, res) => {
 // MULTIPLE SIMULATIONS
 // ----------------------------
 
-export const runMultipleSimulations = (req, res) => {
+export const runMultipleSimulations = async (req, res) => {
   try {
-    const { baseInput, scenarioList } = req.body;
+    const { baseInput, scenarios } = req.body;
 
     // 🔴 Basic validation
     if (!baseInput || typeof baseInput !== "object") {
@@ -95,10 +95,10 @@ export const runMultipleSimulations = (req, res) => {
       });
     }
 
-    if (!Array.isArray(scenarioList) || scenarioList.length === 0) {
+    if (!Array.isArray(scenarios) || scenarios.length === 0) {
       return res.status(400).json({
         success: false,
-        message: "'scenarioList' must be a non-empty array",
+        message: "'scenarios' must be a non-empty array",
       });
     }
 
@@ -111,10 +111,10 @@ export const runMultipleSimulations = (req, res) => {
     }
 
     console.log("📊 Running multiple simulations:", {
-      scenarios: scenarioList.length,
+      scenarios: scenarios.length,
     });
 
-    const results = runMultipleScenarios(baseInput, scenarioList);
+    const results = await runMultipleScenarios(baseInput, scenarios);
 
     return res.status(200).json({
       success: true,
