@@ -5,6 +5,7 @@ import ShipmentsPage from './pages/ShipmentsPage';
 import AnalyticsPage from './pages/AnalyticsPage';
 import SettingsPage from './pages/SettingsPage';
 import Sidebar from './components/Sidebar';
+import SimulationPanel from './components/SimulationPanel';
 
 function App() {
   return (
@@ -28,6 +29,7 @@ function App() {
               <Route path="/shipments" element={<ShipmentsPage />} />
               <Route path="/analytics" element={<AnalyticsPage />} />
               <Route path="/settings" element={<SettingsPage />} />
+              <Route path="/simulation" element={<SimulationPanel />} />
             </Routes>
           </div>
         </main>
