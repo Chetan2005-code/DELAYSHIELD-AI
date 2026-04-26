@@ -1,51 +1,38 @@
-import express from "express";
-import cors from "cors";
-import dotenv from "dotenv";
-import routes from "./routes/index.js";
+import express from 'express'
+import cors from 'cors'
+import dotenv from 'dotenv'
+import routes from './routes/index.js'
 
-// Load environment variables
-dotenv.config();
+dotenv.config()
 
-const app = express();
+const app = express()
+const allowedOrigin = process.env.CLIENT_URL || 'http://localhost:5173'
 
-// --------------------
-// MIDDLEWARE
-// --------------------
-app.use(cors());
-app.use(express.json());
+app.use(cors({
+  origin: allowedOrigin
+}))
+app.use(express.json())
 
-// --------------------
-// BASE ROUTE (Health Check)
-// --------------------
-app.get("/", (req, res) => {
-  res.send("🚀 DelayShield AI Backend Running");
-});
+app.get('/', (req, res) => {
+  res.send('DelayShield AI Backend Running')
+})
 
-// --------------------
-// API ROUTES
-// --------------------
-app.use("/api", routes);
+app.use('/api', routes)
 
-// --------------------
-// 404 HANDLER
-// --------------------
 app.use((req, res) => {
   res.status(404).json({
     success: false,
-    message: "Route not found",
-  });
-});
+    message: 'Route not found'
+  })
+})
 
-// --------------------
-// GLOBAL ERROR HANDLER (optional but pro)
-// --------------------
 app.use((err, req, res, next) => {
-  console.error("Error:", err.message);
+  console.error('Error:', err.message)
 
   res.status(500).json({
     success: false,
-    message: "Internal Server Error",
-  });
-});
+    message: 'Internal Server Error'
+  })
+})
 
-export default app;
+export default app

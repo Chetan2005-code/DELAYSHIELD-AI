@@ -1,41 +1,101 @@
-import axios from 'axios';
+import axios from 'axios'
 
-// ─── Axios Instance ─────────────────────────────────────────
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api'
+const TOKEN_STORAGE_KEY = 'delayshield_token'
+const USER_STORAGE_KEY = 'delayshield_user'
+
 const api = axios.create({
-  baseURL: 'http://localhost:5000/api',
+  baseURL: API_BASE_URL,
   timeout: 35000,
   headers: { 'Content-Type': 'application/json' },
-});
+})
 
-// ─── Data Transformers ──────────────────────────────────────
+export const getStoredToken = () => localStorage.getItem(TOKEN_STORAGE_KEY)
 
-/**
- * Transform a backend shipment into the shape the frontend components expect.
- */
+export const getStoredUser = () => {
+  const raw = localStorage.getItem(USER_STORAGE_KEY)
+  if (!raw) return null
+
+  try {
+    return JSON.parse(raw)
+  } catch {
+    return null
+  }
+}
+
+export const persistSession = ({ token, user }) => {
+  localStorage.setItem(TOKEN_STORAGE_KEY, token)
+  localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(user))
+}
+
+export const clearStoredSession = () => {
+  localStorage.removeItem(TOKEN_STORAGE_KEY)
+  localStorage.removeItem(USER_STORAGE_KEY)
+  window.dispatchEvent(new Event('delayshield:session-cleared'))
+}
+
+api.interceptors.request.use((config) => {
+  const token = getStoredToken()
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`
+  }
+  return config
+})
+
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error?.response?.status === 401) {
+      clearStoredSession()
+    }
+    return Promise.reject(error)
+  }
+)
+
+export const loginWithGoogleCredential = async (credential) => {
+  const response = await api.post('/auth/google', { credential })
+  return response.data
+}
+
+export const signupWithPassword = async ({ name, email, password }) => {
+  const response = await api.post('/auth/signup', { name, email, password })
+  return response.data
+}
+
+export const loginWithPassword = async ({ email, password }) => {
+  const response = await api.post('/auth/login', { email, password })
+  return response.data
+}
+
+export const getCurrentUser = async () => {
+  const response = await api.get('/auth/me')
+  return response.data
+}
+
 export const transformShipment = (s) => {
-  if (!s) return null;
+  if (!s) return null
 
-  const traffic = s.traffic ?? 50;
-  const delay = s.delay ?? 0;
-  const weather = s.weather ?? 20;
+  const traffic = s.traffic ?? 50
+  const delay = s.delay ?? 0
+  const weather = s.weather ?? 20
 
-  const rawRisk = (traffic * 0.4) + (delay * 0.6);
-  let riskScore = 'Low';
-  if (rawRisk > 60) riskScore = 'High';
-  else if (rawRisk > 35) riskScore = 'Medium';
+  const rawRisk = (traffic * 0.4) + (delay * 0.6)
+  let riskScore = 'Low'
+  if (rawRisk > 60) riskScore = 'High'
+  else if (rawRisk > 35) riskScore = 'Medium'
 
-  const origin = s.origin || s.source || { name: 'Unknown', lat: 0, lon: 0 };
-  const destination = s.destination || { name: 'Unknown', lat: 0, lon: 0 };
+  const origin = s.origin || s.source || { name: 'Unknown', lat: 0, lon: 0 }
+  const destination = s.destination || { name: 'Unknown', lat: 0, lon: 0 }
 
-  const progress = 0.4;
-  const currentLat = (origin.lat || 0) + ((destination.lat || 0) - (origin.lat || 0)) * progress;
-  const currentLng = (origin.lon || 0) + ((destination.lon || 0) - (origin.lon || 0)) * progress;
+  const progress = 0.4
+  const currentLat = (origin.lat || 0) + ((destination.lat || 0) - (origin.lat || 0)) * progress
+  const currentLng = (origin.lon || origin.lng || 0) + ((destination.lon || destination.lng || 0) - (origin.lon || origin.lng || 0)) * progress
 
   return {
     id: s.id,
     name: s.name || `Shipment ${s.id}`,
-    origin: { name: origin.name || origin.city, lat: origin.lat, lng: origin.lon },
-    destination: { name: destination.name || destination.city, lat: destination.lat, lng: destination.lon },
+    origin: { name: origin.name || origin.city, lat: origin.lat, lng: origin.lon ?? origin.lng },
+    destination: { name: destination.name || destination.city, lat: destination.lat, lng: destination.lon ?? destination.lng },
     currentLocation: { lat: currentLat, lng: currentLng },
     status: s.status || 'In Transit',
     etas: {
@@ -50,45 +110,45 @@ export const transformShipment = (s) => {
     cargoType: s.cargoType || 'General Cargo',
     vehicleType: s.vehicleType || 'Semi-Trailer',
     _raw: s,
-  };
-};
+  }
+}
 
 const titleCase = (value) => {
-  if (!value) return '';
+  if (!value) return ''
   return String(value)
     .replace(/_/g, ' ')
     .toLowerCase()
-    .replace(/\b\w/g, (char) => char.toUpperCase());
-};
+    .replace(/\b\w/g, (char) => char.toUpperCase())
+}
 
 const formatCurrencyImpact = (value, fallback = 'INR 0') => {
-  if (value === null || value === undefined || Number.isNaN(Number(value))) return fallback;
-  const numeric = Number(value);
-  const sign = numeric > 0 ? '+' : numeric < 0 ? '-' : '';
-  return `${sign}INR ${Math.abs(Math.round(numeric)).toLocaleString()}`;
-};
+  if (value === null || value === undefined || Number.isNaN(Number(value))) return fallback
+  const numeric = Number(value)
+  const sign = numeric > 0 ? '+' : numeric < 0 ? '-' : ''
+  return `${sign}INR ${Math.abs(Math.round(numeric)).toLocaleString()}`
+}
 
 const getDominantFactor = (riskFactors) => {
-  const entries = Object.entries(riskFactors || {});
-  if (entries.length === 0) return 'Traffic';
+  const entries = Object.entries(riskFactors || {})
+  if (entries.length === 0) return 'Traffic'
 
-  return titleCase(entries.sort((a, b) => Number(b[1]) - Number(a[1]))[0][0]);
-};
+  return titleCase(entries.sort((a, b) => Number(b[1]) - Number(a[1]))[0][0])
+}
 
 const normalizeKeyFactors = (factors, riskFactors, decisionAction) => {
   const normalized = (Array.isArray(factors) ? factors : [])
     .map(titleCase)
-    .filter(Boolean);
+    .filter(Boolean)
 
   const required = [
     getDominantFactor(riskFactors),
     'Delay',
     decisionAction === 'REROUTE' ? 'Reroute' : 'SLA',
     'Cost',
-  ];
+  ]
 
-  return [...new Set([...normalized, ...required])].slice(0, 4);
-};
+  return [...new Set([...normalized, ...required])].slice(0, 4)
+}
 
 const buildDeterministicInsights = ({
   ai,
@@ -99,16 +159,16 @@ const buildDeterministicInsights = ({
   route,
   shipmentId,
 }) => {
-  const action = decision.action || (riskScore === 'High' ? 'REROUTE' : riskScore === 'Medium' ? 'MONITOR' : 'CONTINUE');
-  const dominantFactor = getDominantFactor(riskFactors);
-  const dominantValue = riskFactors[dominantFactor.toLowerCase()] ?? 0;
-  const routeName = route?.suggestedAltRoads?.[0] || route?.majorRoads?.[0] || 'optimized alternate corridor';
-  const potentialLoss = cost.noActionCost ?? cost.totalImpact ?? cost.breakdown?.baseCost ?? 0;
-  const rerouteCost = cost.rerouteCost ?? Math.round(Math.max(0, potentialLoss * 0.35));
-  const savings = cost.savings ?? Math.max(0, potentialLoss - rerouteCost);
+  const action = decision.action || (riskScore === 'High' ? 'REROUTE' : riskScore === 'Medium' ? 'MONITOR' : 'CONTINUE')
+  const dominantFactor = getDominantFactor(riskFactors)
+  const dominantValue = riskFactors[dominantFactor.toLowerCase()] ?? 0
+  const routeName = route?.suggestedAltRoads?.[0] || route?.majorRoads?.[0] || 'optimized alternate corridor'
+  const potentialLoss = cost.noActionCost ?? cost.totalImpact ?? cost.breakdown?.baseCost ?? 0
+  const rerouteCost = cost.rerouteCost ?? Math.round(Math.max(0, potentialLoss * 0.35))
+  const savings = cost.savings ?? Math.max(0, potentialLoss - rerouteCost)
 
-  const shouldReroute = action === 'REROUTE' || riskScore === 'High';
-  const primaryAction = shouldReroute ? 'Reroute' : action === 'MONITOR' ? 'Monitor' : 'Continue';
+  const shouldReroute = action === 'REROUTE' || riskScore === 'High'
+  const primaryAction = shouldReroute ? 'Reroute' : action === 'MONITOR' ? 'Monitor' : 'Continue'
 
   return {
     summary: shouldReroute
@@ -117,8 +177,7 @@ const buildDeterministicInsights = ({
     dominantFactor: `${dominantFactor} contributes most to total risk and drives the current recommendation.`,
     explanation: shouldReroute
       ? `The decision engine compared live ${dominantFactor.toLowerCase()}, delay exposure, route alternatives, and cost impact. Rerouting via ${routeName} offers the best balance between schedule protection and operating cost.`
-      : `The decision engine reviewed live ${dominantFactor.toLowerCase()}, delay exposure, and current route cost. Conditions do not justify a costly reroute yet, so active monitoring is the preferred control.`
-    ,
+      : `The decision engine reviewed live ${dominantFactor.toLowerCase()}, delay exposure, and current route cost. Conditions do not justify a costly reroute yet, so active monitoring is the preferred control.`,
     keyFactors: normalizeKeyFactors(ai.keyFactors, riskFactors, action),
     actions: [
       {
@@ -144,33 +203,30 @@ const buildDeterministicInsights = ({
         recommended: false,
       },
     ],
-  };
-};
+  }
+}
 
-/**
- * Transform the /api/analyze response.
- */
 export const transformAnalysis = (data) => {
-  if (!data) return null;
+  if (!data) return null
 
-  const risk = data.risk || {};
-  const decision = data.decision || {};
-  const cost = data.cost || {};
-  const ai = data.ai || data.explanation || {};
-  const weather = data.weather || {};
-  const input = data.input || data.raw?.input || {};
+  const risk = data.risk || {}
+  const decision = data.decision || {}
+  const cost = data.cost || {}
+  const ai = data.ai || data.explanation || {}
+  const weather = data.weather || {}
+  const input = data.input || data.raw?.input || {}
 
   const riskFactors = {
     traffic: input.traffic ?? risk.breakdown?.traffic ?? 50,
     weather: weather.weatherScore ?? risk.breakdown?.weather ?? 20,
     delay: input.delay ?? risk.breakdown?.delay ?? 10,
-  };
+  }
 
-  const sid = input.shipmentId || data.shipmentId || "SHP-0";
+  const sid = input.shipmentId || data.shipmentId || 'SHP-0'
   const isAiFallback = ai.success === false
     || ai.explanation?.includes('Neural link unavailable')
-    || ai.dominantFactor === 'Connectivity Gap';
-  const route = data.route || null;
+    || ai.dominantFactor === 'Connectivity Gap'
+  const route = data.route || null
   const fallbackInsights = buildDeterministicInsights({
     ai,
     decision,
@@ -179,7 +235,7 @@ export const transformAnalysis = (data) => {
     riskFactors,
     route,
     shipmentId: sid,
-  });
+  })
 
   const insights = isAiFallback ? fallbackInsights : {
     ...fallbackInsights,
@@ -196,7 +252,7 @@ export const transformAnalysis = (data) => {
           recommended: Boolean(action.recommended),
         }))
       : fallbackInsights.actions,
-  };
+  }
 
   return {
     riskScore: risk.level || 'Low',
@@ -211,25 +267,20 @@ export const transformAnalysis = (data) => {
     },
     route,
     raw: data,
-  };
-};
+  }
+}
 
-/**
- * Transform Simulation Results for Comparison View.
- */
 export const transformSimulationResult = (result, index) => {
-  const simulated = result.simulated || {};
-  const diff = result.difference || {};
-  
+  const simulated = result.simulated || {}
+  const diff = result.difference || {}
+
   return {
     label: result.label || `Scenario ${index + 1}`,
     id: index + 1,
-    // Core Simulated Data
     riskScore: simulated.risk?.score || 0,
     riskLevel: simulated.risk?.level || 'Low',
     decision: simulated.decision?.action || 'Continue',
     cost: simulated.cost?.noActionCost || 0,
-    // Comparison/Difference Data
     difference: {
       riskChange: diff.riskScoreFormatted || 'No change',
       costChange: diff.costChangeFormatted || 'No change',
@@ -239,106 +290,63 @@ export const transformSimulationResult = (result, index) => {
       isCostIncreased: diff.costChange > 0,
     },
     raw: result
-  };
-};
-
-// ─── API Functions ──────────────────────────────────────────
+  }
+}
 
 export const getShipments = async () => {
-  try {
-    const response = await api.get('/shipment');
-    const shipments = response.data?.data || response.data || [];
-    return shipments.map(transformShipment);
-  } catch (error) {
-    console.error('Failed to fetch shipments:', error);
-    throw error;
-  }
-};
+  const response = await api.get('/shipment')
+  const shipments = response.data?.data || response.data || []
+  return shipments.map(transformShipment)
+}
+
+export const createShipment = async (payload) => {
+  const response = await api.post('/shipment', payload)
+  return response.data
+}
 
 export const analyzeShipment = async (payload) => {
-  try {
-    const response = await api.post('/analyze', payload);
-    return response.data;
-  } catch (error) {
-    console.error('Failed to analyze shipment:', error);
-    throw error;
-  }
-};
+  const response = await api.post('/analyze', payload)
+  return response.data
+}
 
 export const getCityTraffic = async () => {
-  try {
-    const response = await api.get('/city/traffic');
-    return response.data?.data || response.data || [];
-  } catch (error) {
-    console.error('Failed to fetch city traffic:', error);
-    throw error;
-  }
-};
+  const response = await api.get('/city/traffic')
+  return response.data?.data || response.data || []
+}
 
-/**
- * Run What-If Simulation via POST /api/simulation.
- */
 export const runSimulation = async (baseInput, scenarios) => {
-  try {
-    const response = await api.post('/simulation', {
-      baseInput,
-      scenarios,
-    });
-    return response.data;
-  } catch (error) {
-    console.error('Failed to run simulation:', error);
-    throw error;
-  }
-};
+  const response = await api.post('/simulation', {
+    baseInput,
+    scenarios,
+  })
+  return response.data
+}
 
 export const getHistory = async () => {
-  try {
-    const response = await api.get('/history');
-    const history = response.data?.history || response.data?.data || [];
-    return history.map(h => ({
-      ...h,
-      riskLevel: h.riskScore > 70 ? 'High' : h.riskScore > 40 ? 'Medium' : 'Low'
-    }));
-  } catch (error) {
-    console.error('Failed to fetch history:', error);
-    throw error;
-  }
-};
+  const response = await api.get('/history')
+  const history = response.data?.history || response.data?.data || []
+  return history.map((h) => ({
+    ...h,
+    riskLevel: h.riskScore > 70 ? 'High' : h.riskScore > 40 ? 'Medium' : 'Low'
+  }))
+}
 
 export const saveDecision = async (decision) => {
-  try {
-    const response = await api.post('/history', decision);
-    return response.data;
-  } catch (error) {
-    console.error('Failed to save decision:', error);
-    throw error;
-  }
-};
+  const response = await api.post('/history', decision)
+  return response.data
+}
 
-/**
- * POST /api/analyze-shipment
- * Sends origin + destination to Gemini AI and receives a full shipment + insights.
- */
 export const createDynamicShipment = async (origin, destination) => {
-  try {
-    const response = await api.post('/analyze-shipment', { origin, destination });
-    return response.data;
-  } catch (error) {
-    console.error('Failed to create dynamic shipment:', error);
-    throw error;
-  }
-};
+  const response = await api.post('/analyze-shipment', { origin, destination })
+  return response.data
+}
 
-/**
- * Transform the Gemini-generated shipment into the frontend shape
- * expected by ShipmentCard, MapView, etc.
- */
 export const transformGeneratedShipment = (data) => {
-  if (!data?.shipment) return null;
+  if (!data?.shipment) return null
 
-  const s = data.shipment;
-  const i = data.insights;
-  const mc = data.modeComparison;
+  const s = data.shipment
+  const i = data.insights
+  const mc = data.modeComparison
 
   const transformed = {
     id: s.id,
@@ -356,23 +364,23 @@ export const transformGeneratedShipment = (data) => {
     cargoType: 'General Cargo',
     vehicleType: 'Semi-Trailer',
     _generated: true,
-  };
+  }
 
   const insights = {
     summary: i?.summary || '',
     dominantFactor: i?.dominantFactor || '',
     explanation: i?.explanation || '',
     keyFactors: i?.keyFactors || ['Traffic', 'Delay', 'Cost', 'SLA'],
-    actions: (i?.actions || []).map(a => ({
+    actions: (i?.actions || []).map((a) => ({
       type: a.type,
       description: a.description,
       tradeOff: a.tradeOff,
       costImpact: a.costImpact,
       recommended: Boolean(a.recommended),
     })),
-  };
+  }
 
-  return { transformed, insights, modeComparison: mc };
-};
+  return { transformed, insights, modeComparison: mc }
+}
 
-export default api;
+export default api

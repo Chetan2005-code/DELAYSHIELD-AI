@@ -1,22 +1,31 @@
-import React from 'react';
-import { NavLink, useLocation } from 'react-router-dom';
-import { LayoutDashboard, PackageSearch, BarChart3, Settings, RefreshCw } from 'lucide-react';
-import { useNavigationLoading } from './NavigationLoadingContext';
+import React from 'react'
+import { NavLink, useLocation, useNavigate } from 'react-router-dom'
+import { BarChart3, LayoutDashboard, LogOut, PackageSearch, RefreshCw, Settings } from 'lucide-react'
+import { useNavigationLoading } from './NavigationLoadingContext'
+import { useAuth } from '../auth/AuthContext'
 
 const Sidebar = () => {
-  const location = useLocation();
-  const { pendingPath, startNavigation } = useNavigationLoading();
+  const location = useLocation()
+  const navigate = useNavigate()
+  const { pendingPath, startNavigation } = useNavigationLoading()
+  const { user, logout } = useAuth()
 
   const links = [
     { to: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
     { to: '/shipments', icon: PackageSearch, label: 'Shipments' },
     { to: '/analytics', icon: BarChart3, label: 'Analytics' },
     { to: '/settings', icon: Settings, label: 'Settings' },
-  ];
+  ]
+
+  const initials = String(user?.name || 'Admin')
+    .split(' ')
+    .map((part) => part[0])
+    .join('')
+    .slice(0, 2)
+    .toUpperCase()
 
   return (
     <aside className="w-full md:w-64 h-auto md:h-screen fixed bottom-0 md:bottom-auto md:top-0 left-0 bg-blue-900 border-t-4 md:border-t-0 md:border-r-4 border-blue-700 flex flex-row md:flex-col z-50 shadow-[0_-4px_20px_rgba(23,37,84,0.3)] md:shadow-2xl md:shadow-blue-950/40">
-      {/* Brand Header */}
       <div className="hidden md:flex h-20 items-center gap-3 px-6 border-b-2 border-blue-700/60 bg-blue-950">
         <img src="/ai_logo.png" alt="DelayShield AI Logo" className="w-10 h-10 object-contain rounded-lg shadow-lg ring-2 ring-blue-500/30 bg-[#151c2c]" />
         <div className="flex flex-col">
@@ -27,7 +36,6 @@ const Sidebar = () => {
         </div>
       </div>
 
-      {/* Navigation Links */}
       <nav className="flex-1 flex flex-row md:flex-col justify-around md:justify-start px-2 py-2 md:px-3 md:py-6 space-x-1 md:space-x-0 md:space-y-1">
         {links.map((link) => (
           <NavLink
@@ -35,7 +43,7 @@ const Sidebar = () => {
             to={link.to}
             onClick={() => {
               if (location.pathname !== link.to) {
-                startNavigation(link.to);
+                startNavigation(link.to)
               }
             }}
             className={({ isActive }) => `
@@ -55,18 +63,28 @@ const Sidebar = () => {
         ))}
       </nav>
 
-      {/* Footer / User Profile */}
-      <div className="hidden md:block p-4 border-t-2 border-blue-700/60">
-        <div className="flex items-center gap-3 px-4 py-3 rounded-xl bg-blue-800/60 hover:bg-blue-800 cursor-pointer transition-colors border border-blue-700/50">
-          <div className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center text-white font-black text-xs shadow">AU</div>
-          <div>
-            <p className="text-sm font-bold text-white leading-tight">Admin User</p>
-            <p className="text-xs text-blue-300">Logistics Corp.</p>
+      <div className="hidden md:block p-4 border-t-2 border-blue-700/60 space-y-3">
+        <div className="flex items-center gap-3 px-4 py-3 rounded-xl bg-blue-800/60 border border-blue-700/50">
+          <div className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center text-white font-black text-xs shadow">{initials}</div>
+          <div className="min-w-0">
+            <p className="text-sm font-bold text-white leading-tight truncate">{user?.name || 'Admin User'}</p>
+            <p className="text-xs text-blue-300 truncate">{user?.email || 'Authenticated session'}</p>
           </div>
         </div>
+
+        <button
+          onClick={() => {
+            logout()
+            navigate('/login', { replace: true })
+          }}
+          className="w-full flex items-center justify-center gap-2 rounded-xl border border-blue-700/70 bg-blue-950 px-4 py-3 text-sm font-black text-blue-100 transition-colors hover:bg-blue-800"
+        >
+          <LogOut size={16} />
+          Sign Out
+        </button>
       </div>
     </aside>
-  );
-};
+  )
+}
 
-export default Sidebar;
+export default Sidebar

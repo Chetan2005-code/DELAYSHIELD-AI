@@ -1,11 +1,9 @@
-import { GoogleGenerativeAI } from "@google/generative-ai";
 import dotenv from "dotenv";
+import { generateContentWithModelFallback } from "./geminiModel.js";
 
 dotenv.config();
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
-const GEMINI_MODEL = process.env.GEMINI_MODEL || "gemini-1.5-flash";
-const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
 
 const SYSTEM_PROMPT = `You are the DelayShield Tactical AI. Your objective is to analyze logistics telemetry and provide strategic routing decisions, including a comparison of different transport modes.
 
@@ -81,12 +79,15 @@ export const generateAIPlan = async (input = {}) => {
       throw new Error("AI_KEY_NOT_CONFIGURED");
     }
 
-    const model = genAI.getGenerativeModel({ model: GEMINI_MODEL });
     const prompt = buildPrompt(origin, destination, risk, decision);
 
-    // Execute with timeout protection
-    const result = await model.generateContent(prompt, { signal: controller.signal });
-    console.log("The Gemini response is:", result);
+    const { result } = await generateContentWithModelFallback({
+      apiKey: GEMINI_API_KEY,
+      prompt,
+      signal: controller.signal,
+      retriesPerModel: 1,
+      retryDelayMs: 800
+    });
     clearTimeout(timeoutId);
 
     const rawText = result.response.text();

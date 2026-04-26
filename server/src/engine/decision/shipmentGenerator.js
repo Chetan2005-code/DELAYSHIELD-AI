@@ -1,10 +1,9 @@
 import dotenv from 'dotenv'
+import { generateContentWithModelFallback } from './geminiModel.js'
 
 dotenv.config()
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY
-const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-1.5-flash'
-let cachedModel = null
 
 /**
  * The prompt instructs Gemini to return a single, flat JSON object
@@ -122,22 +121,6 @@ Analyze a shipment from "${origin}" to "${destination}".
 Generate the complete JSON response now.`
 }
 
-async function getGeminiModel() {
-  if (cachedModel) return cachedModel
-
-  try {
-    const { GoogleGenerativeAI } = await import('@google/generative-ai')
-    const genAI = new GoogleGenerativeAI(GEMINI_API_KEY)
-    cachedModel = genAI.getGenerativeModel({ model: GEMINI_MODEL })
-    return cachedModel
-  } catch (error) {
-    if (error?.code === 'ERR_MODULE_NOT_FOUND') {
-      throw new Error('GEMINI_SDK_NOT_INSTALLED')
-    }
-    throw error
-  }
-}
-
 /**
  * Validates the parsed shipment+insights payload from Gemini.
  */
@@ -175,17 +158,21 @@ function validatePayload(data) {
  */
 export const generateShipment = async (origin, destination) => {
   const controller = new AbortController()
-  const timeoutId = setTimeout(() => controller.abort(), 45000)
+  const timeoutId = setTimeout(() => controller.abort(), 90000)
 
   try {
     if (!GEMINI_API_KEY || GEMINI_API_KEY === 'YOUR_API_KEY_HERE') {
       throw new Error('AI_KEY_NOT_CONFIGURED')
     }
 
-    const model = await getGeminiModel()
     const prompt = buildPrompt(origin, destination)
-
-    const result = await model.generateContent(prompt, { signal: controller.signal })
+    const { result, modelName } = await generateContentWithModelFallback({
+      apiKey: GEMINI_API_KEY,
+      prompt,
+      signal: controller.signal,
+      retriesPerModel: 1,
+      retryDelayMs: 1200
+    })
     clearTimeout(timeoutId)
 
     const rawText = result.response.text()
@@ -193,11 +180,17 @@ export const generateShipment = async (origin, destination) => {
     const jsonStr = rawText.substring(rawText.indexOf('{'), rawText.lastIndexOf('}') + 1)
     const parsed = JSON.parse(jsonStr)
 
+    // Override the LLM-generated ID to guarantee uniqueness and prevent duplicate key errors
+    parsed.shipment.id = `SHP-${Math.floor(10000 + Math.random() * 90000)}`
+
     validatePayload(parsed)
 
     return {
       success: true,
-      data: parsed
+      data: parsed,
+      meta: {
+        model: modelName
+      }
     }
   } catch (error) {
     clearTimeout(timeoutId)

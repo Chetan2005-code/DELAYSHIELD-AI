@@ -1,9 +1,9 @@
-import express from "express";
-import { analyzeShipment } from "../controllers/analyze.controller.js";
+import express from 'express'
+import { analyzeShipment } from '../controllers/analyze.controller.js'
+import { requireAuth } from '../middleware/auth.middleware.js'
 
-const router = express.Router();
+const router = express.Router()
 
-// Full pipeline API
-router.post("/", analyzeShipment);
+router.post('/', requireAuth, analyzeShipment)
 
-export default router;
+export default router

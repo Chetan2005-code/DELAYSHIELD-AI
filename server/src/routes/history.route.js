@@ -1,15 +1,11 @@
-import { Router } from "express";
-import { getAllHistory, getShipmentHistory, createHistoryEntry } from "../controllers/history.controller.js";
+import { Router } from 'express'
+import { getAllHistory, getShipmentHistory, createHistoryEntry } from '../controllers/history.controller.js'
+import { requireAuth } from '../middleware/auth.middleware.js'
 
-const router = Router();
+const router = Router()
 
-// GET /api/history
-router.get("/", getAllHistory);
+router.get('/', requireAuth, getAllHistory)
+router.post('/', requireAuth, createHistoryEntry)
+router.get('/:shipmentId', requireAuth, getShipmentHistory)
 
-// POST /api/history
-router.post("/", createHistoryEntry);
-
-// GET /api/history/:shipmentId
-router.get("/:shipmentId", getShipmentHistory);
-
-export default router;
+export default router

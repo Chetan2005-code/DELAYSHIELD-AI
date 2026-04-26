@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/set-state-in-effect */
 import React, { useState, useEffect, useMemo } from 'react';
 import { BarChart3, TrendingUp, PieChart as PieIcon } from 'lucide-react';
 import { 

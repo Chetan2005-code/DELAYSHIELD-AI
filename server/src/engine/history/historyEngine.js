@@ -1,28 +1,27 @@
-/**
- * historyEngine.js
- * Tracks shipment decisions and suggestions.
- */
-import { shipmentHistory } from "../../data/history.js";
+import { shipmentHistory } from '../../data/history.js'
 
-// Ensure a standard format when adding history
 export const addHistory = (record) => {
   const newRecord = {
     shipmentId: record.shipmentId || `SHP-${Date.now()}`,
-    route: record.route || "Unknown Route",
-    decision: record.decision || "UNKNOWN",
+    userId: record.userId ?? null,
+    route: record.route || 'Unknown Route',
+    decision: record.decision || 'UNKNOWN',
     riskScore: record.riskScore || 0,
-    costImpact: record.costImpact || "$0",
+    costImpact: record.costImpact || '$0',
     timestamp: new Date().toISOString(),
-  };
-  
-  shipmentHistory.push(newRecord);
-  return newRecord;
-};
+  }
 
-export const getHistory = () => {
-  return shipmentHistory;
-};
+  shipmentHistory.push(newRecord)
+  return newRecord
+}
 
-export const getHistoryByShipment = (id) => {
-  return shipmentHistory.filter(record => record.shipmentId === id);
-};
+export const getHistory = (userId = null) => {
+  if (userId === null || userId === undefined) return shipmentHistory
+  return shipmentHistory.filter((record) => record.userId === userId)
+}
+
+export const getHistoryByShipment = (shipmentId, userId = null) => {
+  return shipmentHistory.filter((record) =>
+    record.shipmentId === shipmentId && (userId === null || record.userId === userId)
+  )
+}

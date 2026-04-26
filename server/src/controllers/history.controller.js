@@ -1,7 +1,7 @@
-import { getHistory, getHistoryByShipment } from "../engine/history/historyEngine.js";
+import { addHistory, getHistory, getHistoryByShipment } from "../engine/history/historyEngine.js";
 
 export const getAllHistory = (req, res) => {
-  const history = getHistory();
+  const history = getHistory(req.user.id);
   return res.status(200).json({
     success: true,
     history
@@ -10,7 +10,7 @@ export const getAllHistory = (req, res) => {
 
 export const getShipmentHistory = (req, res) => {
   const { shipmentId } = req.params;
-  const history = getHistoryByShipment(shipmentId);
+  const history = getHistoryByShipment(shipmentId, req.user.id);
 
   if (!history || history.length === 0) {
     return res.status(404).json({
@@ -34,7 +34,7 @@ export const createHistoryEntry = (req, res) => {
     });
   }
 
-  const record = addHistory({ shipmentId, route, decision, riskScore, costImpact });
+  const record = addHistory({ shipmentId, route, decision, riskScore, costImpact, userId: req.user.id });
   
   return res.status(201).json({
     success: true,

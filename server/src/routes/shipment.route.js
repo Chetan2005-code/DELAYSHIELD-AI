@@ -1,15 +1,15 @@
-import { Router } from "express";
+import { Router } from 'express'
 import {
-  getShipments,
+  createShipment,
   getShipmentById,
-} from "../controllers/shipment.controller.js";
+  getShipments
+} from '../controllers/shipment.controller.js'
+import { requireAuth } from '../middleware/auth.middleware.js'
 
-const router = Router();
+const router = Router()
 
-// Get all shipments
-router.get("/", getShipments);
+router.get('/', requireAuth, getShipments)
+router.post('/', requireAuth, createShipment)
+router.get('/:id', requireAuth, getShipmentById)
 
-// Get one shipment
-router.get("/:id", getShipmentById);
-
-export default router;
+export default router

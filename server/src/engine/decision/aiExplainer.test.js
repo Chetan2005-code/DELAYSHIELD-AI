@@ -15,10 +15,11 @@ describe('AI Explainer Engine', () => {
 
     const result = explainDecision(input);
     expect(result).to.have.property('explanation');
-    expect(result.explanation).to.include('High traffic congestion');
-    expect(result.explanation).to.include('saving approximately INR 1500.00');
+    expect(result.explanation).to.include('CRITICAL ALERT:');
+    expect(result.explanation).to.include('safety score of 85');
+    expect(result.explanation).to.include('INR 1500');
     expect(result.keyFactors).to.include('traffic');
-    expect(result.summary).to.include('Rerouting recommended');
+    expect(result.summary).to.include('Tactical Reroute');
   });
 
   it('should explain a Moderate Monitor scenario', () => {
@@ -35,7 +36,8 @@ describe('AI Explainer Engine', () => {
     const result = explainDecision(input);
     expect(result.keyFactors).to.include('weather');
     expect(result.explanation).to.include('Challenging weather');
-    expect(result.summary).to.include('Monitoring advised');
+    expect(result.explanation).to.include('strategic monitoring is advised');
+    expect(result.summary).to.include('Vigilance Mode');
   });
 
   it('should explain a Low Risk scenario', () => {
@@ -50,7 +52,7 @@ describe('AI Explainer Engine', () => {
     };
 
     const result = explainDecision(input);
-    expect(result.explanation).to.include('Conditions are stable');
-    expect(result.summary).to.equal('Safe to continue current route');
+    expect(result.explanation).to.include('Current trajectory is clear');
+    expect(result.summary).to.equal('Standard Transit: Baseline operations');
   });
 });

@@ -1,30 +1,30 @@
-import { Router } from "express";
-import shipmentRoutes from "./shipment.route.js";
-import analyzeRoutes from "./analyze.routes.js";
-import cityRoutes from "./city.routes.js";
-import simulationRoutes from "./simulation.route.js";
-import historyRoutes from "./history.route.js";
-import riskRoutes from "./risk.route.js";
-import decisionRoutes from "./decision.route.js";
-import { generateDynamicShipment } from "../controllers/analyze.controller.js";
+import { Router } from 'express'
+import shipmentRoutes from './shipment.route.js'
+import analyzeRoutes from './analyze.routes.js'
+import cityRoutes from './city.routes.js'
+import simulationRoutes from './simulation.route.js'
+import historyRoutes from './history.route.js'
+import riskRoutes from './risk.route.js'
+import decisionRoutes from './decision.route.js'
+import authRoutes from './auth.route.js'
+import { generateDynamicShipment } from '../controllers/analyze.controller.js'
+import { requireAuth } from '../middleware/auth.middleware.js'
 
-const router = Router();
+const router = Router()
 
-// Standard health check
-router.get("/health", (req, res) => {
-  res.status(200).json({ status: "UP", timestamp: new Date().toISOString() });
-});
+router.get('/health', (req, res) => {
+  res.status(200).json({ status: 'UP', timestamp: new Date().toISOString() })
+})
 
-// ─── Module Routes ───────────────────────────────────────────
-router.use("/shipment", shipmentRoutes);
-router.use("/analyze", analyzeRoutes);
-router.use("/city", cityRoutes);
-router.use("/simulation", simulationRoutes); // mapped to /api/simulation
-router.use("/history", historyRoutes);
-router.use("/risk", riskRoutes);
-router.use("/decision", decisionRoutes);
+router.use('/auth', authRoutes)
+router.use('/shipment', shipmentRoutes)
+router.use('/analyze', analyzeRoutes)
+router.use('/city', cityRoutes)
+router.use('/simulation', simulationRoutes)
+router.use('/history', historyRoutes)
+router.use('/risk', riskRoutes)
+router.use('/decision', decisionRoutes)
 
-// ─── Dynamic Shipment Generation (Gemini AI) ────────────────
-router.post("/analyze-shipment", generateDynamicShipment);
+router.post('/analyze-shipment', requireAuth, generateDynamicShipment)
 
-export default router;
+export default router

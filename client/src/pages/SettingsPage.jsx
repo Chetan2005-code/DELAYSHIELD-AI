@@ -1,9 +1,11 @@
 import React, { useEffect } from 'react';
 import { Settings } from 'lucide-react';
 import { useNavigationLoading } from '../components/NavigationLoadingContext';
+import { useAuth } from '../auth/AuthContext';
 
 const SettingsPage = () => {
   const { finishNavigation } = useNavigationLoading();
+  const { user } = useAuth();
 
   useEffect(() => {
     finishNavigation('/settings');
@@ -27,6 +29,12 @@ const SettingsPage = () => {
         </h2>
 
         <div className="space-y-5">
+          <div className="p-5 bg-blue-950 rounded-xl border-2 border-blue-900 text-white">
+            <h3 className="text-base font-black mb-1">Authenticated Admin</h3>
+            <p className="text-sm text-blue-200 font-medium">{user?.name || 'Unknown Admin'}</p>
+            <p className="text-xs text-blue-300 font-bold mt-1">{user?.email || 'No email loaded'}</p>
+          </div>
+
           {/* API Keys */}
           <div className="p-5 bg-blue-50 rounded-xl border-2 border-blue-200 hover:border-blue-400 transition-colors">
             <div className="flex items-start justify-between">
