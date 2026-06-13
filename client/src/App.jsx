@@ -11,13 +11,15 @@ import DashboardPage from "./pages/DashboardPage";
 import ShipmentsPage from "./pages/ShipmentsPage";
 import AnalyticsPage from "./pages/AnalyticsPage";
 import Sidebar from "./components/Sidebar";
-import SimulationPage from "./pages/SimulationPage";
-import PriorityMapPage from "./pages/PriorityMapPage";
-import ShipmentDetailsPage from "./pages/ShipmentDetailsPage";
-import SharedRoutePage from "./pages/SharedRoutePage";
+import SLAGuardianPage from "./pages/SLAGuardianPage";
+import WarehouseIntelligencePage from "./pages/WarehouseIntelligencePage";
+import CommunicationCenterPage from "./pages/CommunicationCenterPage";
+import TrackingCenterPage from "./pages/TrackingCenterPage";
+import SettingsPage from "./pages/SettingsPage";
 import LoginPage from "./pages/LoginPage";
 import LossImpactPage from "./pages/LossImpactPage";
 import LandingPage from "./pages/LandingPage";
+import SharedRoutePage from "./pages/SharedRoutePage";
 import ProtectedRoute from "./components/ProtectedRoute";
 import { NavigationLoadingProvider } from "./components/NavigationLoadingContext";
 import { useAuth } from "./auth/AuthContext";
@@ -108,10 +110,34 @@ function AppShell() {
               }
             />
             <Route
-              path="/shipment/:id"
+              path="/sla-guardian"
               element={
                 <ProtectedRoute>
-                  <ShipmentDetailsPage />
+                  <SLAGuardianPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/warehouse"
+              element={
+                <ProtectedRoute>
+                  <WarehouseIntelligencePage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/communication"
+              element={
+                <ProtectedRoute>
+                  <CommunicationCenterPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/tracking"
+              element={
+                <ProtectedRoute>
+                  <TrackingCenterPage />
                 </ProtectedRoute>
               }
             />
@@ -125,26 +151,18 @@ function AppShell() {
               }
             />
             <Route
-              path="/priority-map"
-              element={
-                <ProtectedRoute>
-                  <PriorityMapPage />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/simulation"
-              element={
-                <ProtectedRoute>
-                  <SimulationPage />
-                </ProtectedRoute>
-              }
-            />
-            <Route
               path="/loss-engine"
               element={
                 <ProtectedRoute>
                   <LossImpactPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/settings"
+              element={
+                <ProtectedRoute>
+                  <SettingsPage />
                 </ProtectedRoute>
               }
             />
