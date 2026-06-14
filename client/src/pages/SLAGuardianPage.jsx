@@ -192,7 +192,13 @@ const SLAGuardianPage = () => {
 
   // Filter high risk from live shipments
   const highRiskShipments = useMemo(() => {
-    return shipments.filter(s => s.riskScore === 'Medium' || s.riskScore === 'High' || s.riskScore === 'Critical');
+    return shipments.filter(s => {
+      // If it is a demo scenario, strictly show only the 3 interesting cases for SLA Guardian
+      if (s.isDemo) {
+        return ['SHP-1002', 'SHP-1003', 'SHP-1005'].includes(s.id);
+      }
+      return s.riskScore === 'Medium' || s.riskScore === 'High' || s.riskScore === 'Critical';
+    });
   }, [shipments]);
 
   const displayedShipments = useMemo(() => {
@@ -248,7 +254,6 @@ const SLAGuardianPage = () => {
         analysis={selectedShipment ? slaAnalyses[selectedShipment.id] : null}
       />
 
-      {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
         <div className="flex items-center gap-4">
           <div className="w-14 h-14 bg-indigo-600 rounded-2xl flex items-center justify-center shadow-xl shadow-indigo-500/30 text-white">
@@ -259,6 +264,12 @@ const SLAGuardianPage = () => {
             <p className="text-xs font-bold text-blue-500/80 uppercase tracking-widest mt-1">Predict, Prevent and Protect Deliveries</p>
           </div>
         </div>
+        <button 
+          onClick={() => window.location.href = '/warehouse'}
+          className="flex items-center gap-2 px-4 py-2 bg-indigo-50 text-indigo-700 font-bold text-sm rounded-xl hover:bg-indigo-100 transition-colors border border-indigo-200"
+        >
+          Next Step: Warehouse Intelligence <ArrowRight className="w-4 h-4" />
+        </button>
       </div>
 
       {/* KPIs */}
@@ -315,7 +326,16 @@ const SLAGuardianPage = () => {
                 
                 return (
                   <tr key={i} className="hover:bg-blue-50/50 transition-colors border-b border-slate-50 last:border-0 group">
-                    <td className="p-4 font-bold text-slate-700">{row.id}</td>
+                    <td className="p-4 font-bold text-slate-700">
+                      <div className="flex items-center gap-2">
+                        {row.id}
+                        {row.isDemo && (
+                          <span className="px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider bg-purple-100 text-purple-700 border border-purple-200">
+                            Demo
+                          </span>
+                        )}
+                      </div>
+                    </td>
                     <td className="p-4 text-slate-600">{currentEta}</td>
                     <td className="p-4 text-slate-600">{deadline}</td>
                     <td className="p-4">

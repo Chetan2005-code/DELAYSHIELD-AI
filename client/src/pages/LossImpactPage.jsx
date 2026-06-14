@@ -1,13 +1,14 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   TrendingUp, TrendingDown, DollarSign, Calculator, 
   ShieldCheck, AlertOctagon, BarChart3, AlertTriangle, 
-  Wallet, PieChart as PieChartIcon
+  Wallet, PieChart as PieChartIcon, ArrowRight
 } from 'lucide-react';
 import { 
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   BarChart, Bar, Legend, Cell, PieChart, Pie
 } from 'recharts';
+import { getAnalyticsMetrics } from '../services/api';
 
 const KPICard = ({ title, value, trend, trendUp, icon: Icon, colorClass, borderClass, bgClass }) => (
   <div className={`bg-white rounded-2xl border border-blue-100 shadow-lg shadow-blue-100/50 p-6 border-l-4 ${borderClass} transition-all duration-300 hover:shadow-xl hover:-translate-y-1 relative overflow-hidden group`}>
@@ -51,7 +52,39 @@ const recentCalculations = [
   { id: 'SHP-52891', type: 'Demurrage Avoided', amount: '₹22,000', risk: 'High', status: 'Saved', action: 'Dock pre-booked' }
 ];
 
+const formatCurrency = (val) => {
+  if (val >= 1000000) return `₹${(val / 1000000).toFixed(1)}M`;
+  if (val >= 1000) return `₹${(val / 1000).toFixed(1)}K`;
+  return `₹${val}`;
+};
+
+const LoadingState = () => (
+  <div className="flex flex-col items-center justify-center h-64 text-red-500 animate-pulse">
+    <Calculator size={48} className="mb-4 opacity-50" />
+    <h2 className="text-lg font-bold">Calculating Financial Impacts...</h2>
+  </div>
+);
+
 const LossImpactPage = () => {
+  const [metrics, setMetrics] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchLossMetrics = async () => {
+      try {
+        const res = await getAnalyticsMetrics();
+        setMetrics(res.lossMetrics);
+      } catch (err) {
+        console.error("Failed to load loss metrics", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchLossMetrics();
+  }, []);
+
+  if (loading) return <div className="p-6 md:p-8 max-w-7xl mx-auto"><LoadingState /></div>;
+
   return (
     <div className="p-6 md:p-8 max-w-7xl mx-auto w-full animate-fade-in pb-24">
       {/* Header */}
@@ -61,21 +94,44 @@ const LossImpactPage = () => {
             <Calculator size={28} />
           </div>
           <div>
-            <h1 className="text-3xl font-black text-blue-950 tracking-tight font-display">Loss Engine</h1>
+            <div className="flex items-center gap-2">
+              <h1 className="text-3xl font-black text-blue-950 tracking-tight font-display">Loss Engine</h1>
+              {metrics?.isDemo && (
+                <span className="px-2 py-1 rounded bg-purple-100 text-purple-700 border border-purple-200 text-[10px] font-bold uppercase tracking-wider">
+                  Demo Dataset
+                </span>
+              )}
+            </div>
             <p className="text-xs font-bold text-blue-500/80 uppercase tracking-widest mt-1">Financial Impact & ROI Analysis</p>
           </div>
         </div>
+        <button 
+          onClick={() => window.location.href = '/delay-dna'}
+          className="flex items-center gap-2 px-4 py-2 bg-red-50 text-red-700 font-bold text-sm rounded-xl hover:bg-red-100 transition-colors border border-red-200"
+        >
+          Next Step: Delay DNA Engine <ArrowRight className="w-4 h-4" />
+        </button>
       </div>
 
-      {/* KPIs */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-        <KPICard title="Total Loss Prevented" value="₹12.2M" trend="18%" trendUp={true} icon={ShieldCheck} colorClass="text-emerald-600" borderClass="border-l-emerald-500" bgClass="bg-emerald-50" />
-        <KPICard title="Actual Penalties" value="₹2.4M" trend="12%" trendUp={false} icon={AlertOctagon} colorClass="text-red-600" borderClass="border-l-red-500" bgClass="bg-red-50" />
-        <KPICard title="Avg Saving/Action" value="₹14.5K" trend="5%" trendUp={true} icon={Wallet} colorClass="text-blue-600" borderClass="border-l-blue-500" bgClass="bg-blue-50" />
-        <KPICard title="ROI Multiplier" value="4.8x" trend="0.3x" trendUp={true} icon={TrendingUp} colorClass="text-indigo-600" borderClass="border-l-indigo-500" bgClass="bg-indigo-50" />
-      </div>
+      {metrics && metrics.totalLossAvoided === 0 && metrics.actualPenalties === 0 ? (
+        <div className="bg-slate-50 border border-slate-200 rounded-2xl p-12 text-center">
+          <Calculator className="w-12 h-12 text-slate-300 mx-auto mb-4" />
+          <h3 className="text-lg font-bold text-slate-700 mb-2">No historical loss calculations available yet.</h3>
+          <p className="text-sm text-slate-500">Create more shipments and trigger SLA analysis to generate financial impact data.</p>
+        </div>
+      ) : (
+        <>
+          {/* KPIs */}
+          {metrics && (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+              <KPICard title="Total Loss Prevented" value={formatCurrency(metrics.totalLossAvoided)} trend="Live" trendUp={true} icon={ShieldCheck} colorClass="text-emerald-600" borderClass="border-l-emerald-500" bgClass="bg-emerald-50" />
+              <KPICard title="Actual Penalties" value={formatCurrency(metrics.actualPenalties)} trend="Live" trendUp={false} icon={AlertOctagon} colorClass="text-red-600" borderClass="border-l-red-500" bgClass="bg-red-50" />
+              <KPICard title="Avg Saving/Action" value={formatCurrency(metrics.averageLossPerDelay)} trend="Live" trendUp={true} icon={Wallet} colorClass="text-blue-600" borderClass="border-l-blue-500" bgClass="bg-blue-50" />
+              <KPICard title="ROI Multiplier" value={`${metrics.roiMultiplier}x`} trend="Live" trendUp={true} icon={TrendingUp} colorClass="text-indigo-600" borderClass="border-l-indigo-500" bgClass="bg-indigo-50" />
+            </div>
+          )}
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
         {/* Main Chart */}
         <div className="lg:col-span-2 bg-white rounded-2xl border border-blue-100 shadow-lg shadow-blue-50/50 p-6">
           <div className="flex justify-between items-center mb-6">
@@ -207,7 +263,8 @@ const LossImpactPage = () => {
           </table>
         </div>
       </div>
-
+        </>
+      )}
     </div>
   );
 };

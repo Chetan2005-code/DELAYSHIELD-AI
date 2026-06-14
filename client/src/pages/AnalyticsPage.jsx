@@ -1,49 +1,75 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   BarChart3, TrendingUp, TrendingDown, Calendar, 
-  Download, Filter, Activity, Package, Map, AlertCircle 
+  Download, Filter, Activity, Package, Map, AlertCircle, DollarSign, Factory, Fuel
 } from 'lucide-react';
 import { 
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend,
   LineChart, Line, AreaChart, Area, PieChart, Pie, Cell
 } from 'recharts';
+import { getAnalyticsMetrics } from '../services/api';
 
-const KPICard = ({ title, value, trend, trendUp, subtitle }) => (
-  <div className="bg-white rounded-2xl border border-blue-100 shadow-lg shadow-blue-50/50 p-6 transition-all duration-300 hover:shadow-xl hover:-translate-y-1">
+const KPICard = ({ title, value, trend, trendUp, subtitle, icon: Icon }) => (
+  <div className="bg-white rounded-2xl border border-blue-100 shadow-lg shadow-blue-50/50 p-6 transition-all duration-300 hover:shadow-xl hover:-translate-y-1 relative overflow-hidden group">
     <div className="flex justify-between items-start mb-2">
-      <p className="text-xs font-bold uppercase tracking-widest text-slate-500">{title}</p>
-      <div className={`flex items-center gap-1 text-[10px] font-bold px-2 py-1 rounded-full ${trendUp ? 'bg-emerald-50 text-emerald-600' : 'bg-red-50 text-red-600'}`}>
-        {trendUp ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
-        {trend}
+      <div className="flex items-center gap-2">
+        {Icon && <Icon className="w-4 h-4 text-slate-400" />}
+        <p className="text-xs font-bold uppercase tracking-widest text-slate-500">{title}</p>
       </div>
+      {trend && (
+        <div className={`flex items-center gap-1 text-[10px] font-bold px-2 py-1 rounded-full ${trendUp ? 'bg-emerald-50 text-emerald-600' : 'bg-red-50 text-red-600'}`}>
+          {trendUp ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
+          {trend}
+        </div>
+      )}
     </div>
     <h3 className="text-3xl font-black text-slate-800 mb-1">{value}</h3>
     <p className="text-xs font-medium text-slate-400">{subtitle}</p>
   </div>
 );
 
-const volumeData = [
-  { name: 'Jan', volume: 4000, delayed: 240 }, { name: 'Feb', volume: 3000, delayed: 139 },
-  { name: 'Mar', volume: 2000, delayed: 980 }, { name: 'Apr', volume: 2780, delayed: 390 },
-  { name: 'May', volume: 1890, delayed: 480 }, { name: 'Jun', volume: 2390, delayed: 380 },
-  { name: 'Jul', volume: 3490, delayed: 430 },
-];
+const LoadingState = () => (
+  <div className="flex flex-col items-center justify-center h-64 text-indigo-500 animate-pulse">
+    <BarChart3 size={48} className="mb-4 opacity-50" />
+    <h2 className="text-lg font-bold">Compiling System Analytics...</h2>
+  </div>
+);
 
-const performanceData = [
-  { name: 'Week 1', compliance: 92, target: 95 }, { name: 'Week 2', compliance: 94, target: 95 },
-  { name: 'Week 3', compliance: 96, target: 95 }, { name: 'Week 4', compliance: 95, target: 95 },
-  { name: 'Week 5', compliance: 98, target: 95 },
-];
+const EmptyState = ({ message }) => (
+  <div className="p-8 text-center text-slate-400 bg-slate-50 rounded-2xl border border-dashed border-slate-200">
+    {message}
+  </div>
+);
 
-const reasonsData = [
-  { name: 'Traffic', value: 45, color: '#ef4444' },
-  { name: 'Weather', value: 25, color: '#3b82f6' },
-  { name: 'Warehouse', value: 20, color: '#f59e0b' },
-  { name: 'Vehicle', value: 10, color: '#8b5cf6' },
-];
+const formatCurrency = (val) => {
+  if (val >= 1000000) return `₹${(val / 1000000).toFixed(1)}M`;
+  if (val >= 1000) return `₹${(val / 1000).toFixed(1)}K`;
+  return `₹${val}`;
+};
 
 const AnalyticsPage = () => {
   const [timeRange, setTimeRange] = useState('This Month');
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchAnalytics = async () => {
+      try {
+        const res = await getAnalyticsMetrics();
+        setData(res);
+      } catch (err) {
+        console.error("Failed to load analytics", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchAnalytics();
+  }, [timeRange]);
+
+  if (loading) return <div className="p-6 md:p-8 max-w-7xl mx-auto"><LoadingState /></div>;
+  if (!data) return <div className="p-6 md:p-8 max-w-7xl mx-auto"><EmptyState message="Failed to load analytics data." /></div>;
+
+  const { kpis, lossMetrics, charts } = data;
 
   return (
     <div className="p-6 md:p-8 max-w-7xl mx-auto w-full animate-fade-in pb-24">
@@ -54,7 +80,14 @@ const AnalyticsPage = () => {
             <BarChart3 size={28} />
           </div>
           <div>
-            <h1 className="text-3xl font-black text-blue-950 tracking-tight font-display">Performance Analytics</h1>
+            <div className="flex items-center gap-2">
+              <h1 className="text-3xl font-black text-blue-950 tracking-tight font-display">Performance Analytics</h1>
+              {data.isDemo && (
+                <span className="px-2 py-1 rounded bg-purple-100 text-purple-700 border border-purple-200 text-[10px] font-bold uppercase tracking-wider">
+                  Demo Dataset
+                </span>
+              )}
+            </div>
             <p className="text-xs font-bold text-blue-500/80 uppercase tracking-widest mt-1">Historical Data & Trends</p>
           </div>
         </div>
@@ -78,12 +111,51 @@ const AnalyticsPage = () => {
         </div>
       </div>
 
-      {/* KPIs */}
+      {/* Primary KPIs */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-        <KPICard title="Total Shipments" value="24,592" trend="12.5%" trendUp={true} subtitle="Compared to last period" />
-        <KPICard title="On-Time Delivery" value="94.8%" trend="2.1%" trendUp={true} subtitle="Target: 95.0%" />
-        <KPICard title="Avg Delay Time" value="42m" trend="15m" trendUp={false} subtitle="Per delayed shipment" />
-        <KPICard title="AI Recovery Rate" value="78.5%" trend="5.4%" trendUp={true} subtitle="Alerts resolved successfully" />
+        <KPICard title="Total Shipments" value={kpis.totalShipments} trend="Live" trendUp={true} subtitle="System-wide" icon={Package} />
+        <KPICard title="On-Time Delivery" value={kpis.onTimeDelivery} trend="Live" trendUp={true} subtitle="SLA Compliance" icon={Activity} />
+        <KPICard title="Avg Delay Time" value={kpis.avgDelayTime} trend="Live" trendUp={false} subtitle="Per delayed shipment" icon={AlertCircle} />
+        <KPICard title="SLA Alerts Resolved" value={kpis.aiRecoveryRate} trend="Live" trendUp={true} subtitle="By AI Interventions" icon={TrendingUp} />
+      </div>
+
+      {/* Loss Engine Financial KPIs */}
+      <div className="mb-8 bg-slate-900 rounded-3xl p-6 md:p-8 shadow-2xl relative overflow-hidden">
+        {/* Decorative background element */}
+        <div className="absolute -right-20 -top-20 w-64 h-64 bg-indigo-500 rounded-full blur-3xl opacity-20 pointer-events-none"></div>
+        <div className="absolute -left-20 -bottom-20 w-64 h-64 bg-emerald-500 rounded-full blur-3xl opacity-20 pointer-events-none"></div>
+        
+        <div className="relative z-10 flex flex-col md:flex-row gap-6 md:items-center justify-between mb-6 border-b border-slate-700 pb-6">
+          <div>
+            <h2 className="text-2xl font-black text-white flex items-center gap-2">
+              <DollarSign className="text-emerald-400" /> Loss Engine Metrics
+            </h2>
+            <p className="text-slate-400 text-sm mt-1">Aggregated financial and operational impacts calculated dynamically</p>
+          </div>
+          <div className="text-right">
+            <p className="text-xs font-bold uppercase tracking-widest text-emerald-400 mb-1">Total Loss Avoided</p>
+            <h3 className="text-4xl font-black text-white">{formatCurrency(lossMetrics.totalLossAvoided)}</h3>
+          </div>
+        </div>
+
+        <div className="relative z-10 grid grid-cols-1 md:grid-cols-4 gap-6">
+          <div>
+            <p className="text-slate-400 text-xs font-bold uppercase tracking-wider mb-1">Avg Loss Per Delay</p>
+            <p className="text-2xl font-bold text-white">{formatCurrency(lossMetrics.averageLossPerDelay)}</p>
+          </div>
+          <div>
+            <p className="text-slate-400 text-xs font-bold uppercase tracking-wider mb-1">Total Fuel Loss</p>
+            <p className="text-2xl font-bold text-rose-400 flex items-center gap-2"><Fuel size={18}/> {formatCurrency(lossMetrics.fuelLoss)}</p>
+          </div>
+          <div>
+            <p className="text-slate-400 text-xs font-bold uppercase tracking-wider mb-1">Total Penalty Loss</p>
+            <p className="text-2xl font-bold text-amber-400">{formatCurrency(lossMetrics.penaltyLoss)}</p>
+          </div>
+          <div>
+            <p className="text-slate-400 text-xs font-bold uppercase tracking-wider mb-1">Carbon Impact (CO₂)</p>
+            <p className="text-2xl font-bold text-emerald-400 flex items-center gap-2"><Factory size={18}/> {Math.round(lossMetrics.carbonImpact / 1000)}k kg</p>
+          </div>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
@@ -97,7 +169,7 @@ const AnalyticsPage = () => {
           </div>
           <div className="h-[300px]">
             <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={volumeData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+              <AreaChart data={charts.volumeData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                 <defs>
                   <linearGradient id="colorVolume" x1="0" y1="0" x2="0" y2="1">
                     <stop offset="5%" stopColor="#4f46e5" stopOpacity={0.1}/>
@@ -129,7 +201,7 @@ const AnalyticsPage = () => {
           </div>
           <div className="h-[300px]">
             <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={performanceData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+              <LineChart data={charts.performanceData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
                 <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#64748b' }} dy={10} />
                 <YAxis domain={[80, 100]} axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#64748b' }} />
@@ -145,64 +217,29 @@ const AnalyticsPage = () => {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        
-        {/* Delay Reasons */}
-        <div className="bg-white rounded-2xl border border-blue-100 shadow-lg shadow-blue-50/50 p-6">
-          <h2 className="text-sm font-bold text-slate-800 mb-6">Root Causes for Delay</h2>
-          <div className="h-[200px] mb-4">
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie data={reasonsData} innerRadius={60} outerRadius={80} paddingAngle={2} dataKey="value">
-                  {reasonsData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.color} />
-                  ))}
-                </Pie>
-                <Tooltip contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
-              </PieChart>
-            </ResponsiveContainer>
-          </div>
-          <div className="grid grid-cols-2 gap-3">
-            {reasonsData.map(item => (
-              <div key={item.name} className="flex items-center gap-2">
-                <span className="w-3 h-3 rounded-full" style={{ backgroundColor: item.color }}></span>
-                <span className="text-xs font-bold text-slate-600">{item.name} <span className="text-slate-400 font-medium">({item.value}%)</span></span>
-              </div>
-            ))}
-          </div>
+      {/* Root Causes for Delay */}
+      <div className="bg-white rounded-2xl border border-blue-100 shadow-lg shadow-blue-50/50 p-6 max-w-2xl">
+        <h2 className="text-sm font-bold text-slate-800 mb-6">Root Causes for Delay</h2>
+        <div className="h-[200px] mb-4">
+          <ResponsiveContainer width="100%" height="100%">
+            <PieChart>
+              <Pie data={charts.reasonsData} innerRadius={60} outerRadius={80} paddingAngle={2} dataKey="value">
+                {charts.reasonsData.map((entry, index) => (
+                  <Cell key={`cell-${index}`} fill={entry.color} />
+                ))}
+              </Pie>
+              <Tooltip contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
+            </PieChart>
+          </ResponsiveContainer>
         </div>
-
-        {/* Top Hubs */}
-        <div className="md:col-span-2 bg-white rounded-2xl border border-blue-100 shadow-lg shadow-blue-50/50 p-6">
-          <h2 className="text-sm font-bold text-slate-800 mb-6">Route Performance (Worst 5)</h2>
-          <div className="space-y-4">
-            {[
-              { route: 'Mumbai → Pune', delays: 145, pct: 18, avgTime: '45m', color: 'red' },
-              { route: 'Delhi → Jaipur', delays: 98, pct: 12, avgTime: '32m', color: 'orange' },
-              { route: 'Chennai → Bangalore', delays: 87, pct: 9, avgTime: '28m', color: 'amber' },
-              { route: 'Kolkata → Patna', delays: 65, pct: 6, avgTime: '41m', color: 'amber' },
-              { route: 'Hyderabad → Vijayawada', delays: 42, pct: 4, avgTime: '15m', color: 'yellow' },
-            ].map((route, i) => (
-              <div key={i} className="flex items-center gap-4">
-                <div className="w-8 font-black text-slate-300 text-lg">0{i+1}</div>
-                <div className="flex-1">
-                  <div className="flex justify-between items-end mb-1">
-                    <span className="text-sm font-bold text-slate-700">{route.route}</span>
-                    <span className="text-xs font-bold text-slate-500">{route.delays} Delays</span>
-                  </div>
-                  <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
-                    <div className={`h-full bg-${route.color}-500 rounded-full`} style={{ width: `${Math.min(100, route.pct * 4)}%` }}></div>
-                  </div>
-                </div>
-                <div className="w-16 text-right">
-                  <span className="text-[10px] uppercase font-bold text-slate-400 block mb-0.5">Avg Loss</span>
-                  <span className="text-sm font-bold text-slate-700">{route.avgTime}</span>
-                </div>
-              </div>
-            ))}
-          </div>
+        <div className="grid grid-cols-2 gap-3">
+          {charts.reasonsData.map(item => (
+            <div key={item.name} className="flex items-center gap-2">
+              <span className="w-3 h-3 rounded-full" style={{ backgroundColor: item.color }}></span>
+              <span className="text-xs font-bold text-slate-600">{item.name} <span className="text-slate-400 font-medium">({item.value}%)</span></span>
+            </div>
+          ))}
         </div>
-
       </div>
     </div>
   );

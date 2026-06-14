@@ -10,10 +10,10 @@ export const ShipmentProvider = ({ children }) => {
   const [slaAnalyses, setSlaAnalyses] = useState({});
   const [isLoading, setIsLoading] = useState(true);
 
-  const fetchShipments = useCallback(async () => {
+  const fetchShipments = useCallback(async (showDemo = false) => {
     setIsLoading(true);
     try {
-      const data = await getShipments(true); // force fetch
+      const data = await getShipments(true, showDemo); // force fetch
       setShipments(data || []);
     } catch (error) {
       console.error("Failed to fetch shipments:", error);

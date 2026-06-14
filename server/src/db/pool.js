@@ -25,10 +25,12 @@ export async function initDatabase() {
   })
 
   try {
-    await seedWarehouses()
+    await seedWarehouses(true)
     console.log('[db] Warehouse database seeded successfully')
+    const { seedDemoShipments } = await import('../repositories/shipment.repository.js')
+    await seedDemoShipments()
   } catch (err) {
-    console.error('[db] Warehouse database seeding failed:', err.message)
+    console.error('[db] Seeding failed:', err.message)
   }
 
   return mongoose.connection

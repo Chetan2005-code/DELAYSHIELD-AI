@@ -103,6 +103,32 @@ const AIAnalysisModal = ({ isOpen, onClose, analysis, shipment }) => {
                       ))}
                     </ul>
 
+                    {analysis.recovery?.warehouseIntelligence && (
+                      <div className="bg-orange-50 border border-orange-200 rounded-xl p-4 mb-6">
+                        <h5 className="text-[10px] font-bold uppercase text-orange-600 mb-2">
+                          Warehouse Intelligence
+                        </h5>
+                        <div className="space-y-1.5 text-sm text-orange-900">
+                          <div className="flex justify-between">
+                            <span className="font-medium">Recommended Hub:</span>
+                            <span className="font-bold">{analysis.recovery.warehouseIntelligence.recommendedWarehouseName}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="font-medium">Utilization:</span>
+                            <span className="font-bold">{analysis.recovery.warehouseIntelligence.utilization}%</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="font-medium">Queue Reduction:</span>
+                            <span className="font-bold">{analysis.recovery.warehouseIntelligence.queueReduction}%</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="font-medium">Est. Time Saved:</span>
+                            <span className="font-bold">{analysis.recovery.warehouseIntelligence.timeSavedFormatted}</span>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
                     <div className="grid grid-cols-2 gap-3 mt-auto">
                       <div className="bg-emerald-50 p-3 rounded-xl border border-emerald-100 text-center">
                         <div className="text-[10px] font-bold uppercase text-emerald-600 mb-1">Time Saved</div>

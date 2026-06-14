@@ -9,7 +9,7 @@ const communicationLogSchema = new mongoose.Schema(
     },
     stakeholderType: {
       type: String,
-      enum: ['Driver', 'Warehouse', 'Customer'],
+      enum: ['Driver', 'Warehouse', 'Customer', 'Operations'],
       required: true
     },
     eventType: {

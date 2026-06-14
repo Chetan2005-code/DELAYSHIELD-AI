@@ -46,8 +46,8 @@ export const analyzeShipment = async (req, res) => {
         getWeatherData(nLat, nLon).catch(() => weatherData),
         getRoute([nLon, nLat], [nEndLon, nEndLat]).catch(() => routeData)
       ])
-      weatherData = w
-      routeData = r
+      weatherData = w || weatherData
+      routeData = r || routeData
     } catch {}
 
     const finalTraffic = traffic ?? simulateTraffic('medium', weatherData.weatherScore, 'Bhopal')

@@ -7,6 +7,7 @@ import {
 import { updateShipmentWarehouse, getShipmentByIdPublic } from '../repositories/shipment.repository.js'
 import { calculateWarehouseStats, getAlternativeRecommendations } from '../engine/warehouse/warehouseEngine.js'
 import { addHistory } from '../engine/history/historyEngine.js'
+import { systemSettings } from '../config/settings.js'
 
 export const getWarehouses = async (req, res) => {
   try {
@@ -16,6 +17,12 @@ export const getWarehouses = async (req, res) => {
     const statsList = []
     for (const wh of rawWarehouses) {
       const stats = await calculateWarehouseStats(wh, rawWarehouses)
+      
+      // Inject demo scenario mapping
+      if (systemSettings.demoMode && stats.id === 'WH-HYD-1') {
+        stats.affectedShipmentId = 'SHP-1003';
+      }
+      
       statsList.push(stats)
     }
 

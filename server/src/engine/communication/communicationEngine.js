@@ -60,6 +60,14 @@ export async function seedDefaultTemplates() {
         channel: 'Email + SMS',
         subject: 'Updated ETA for Shipment {{shipmentId}}',
         body: 'Dear Customer, we have updated your shipment {{shipmentId}} delivery time. Revised ETA: {{updatedEta}} (Delay: {{delay}} min). Thank you for choosing DelayShield.'
+      },
+      {
+        id: 'Operations_Warehouse_Change',
+        stakeholderType: 'Operations',
+        eventType: 'Warehouse Change',
+        channel: 'System Alert',
+        subject: 'Network Rebalance: {{shipmentId}}',
+        body: 'Shipment {{shipmentId}} redirected to {{alternative}} saving {{timeSaving}} minutes. Update internal reporting.'
       }
     ]
 
@@ -220,6 +228,8 @@ export async function sendStakeholderNotification({
     recipient = customContext.driverPhone || `Driver D-${shipment.id.split('-')[1] || '1247'} (+91 98765 01247)`
   } else if (stakeholderType === 'Warehouse') {
     recipient = customContext.warehouseEmail || `${shipment.destination?.name ? 'WH-' + shipment.destination.name.split(',')[0].replace(/\s+/g, '-') : 'WH-Chennai-2'}`
+  } else if (stakeholderType === 'Operations') {
+    recipient = customContext.operationsEmail || 'ops-team@delayshield.com'
   } else {
     recipient = customContext.customerEmail || `Reliance Industries`
   }

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { 
   MessageSquare, Users, Truck, Warehouse, CheckCircle2, 
   Clock, AlertTriangle, Send, Mail, Phone, Bell, 
-  ChevronRight, User, Building, TrendingUp, X, Loader, Edit2, Plus, Sparkles
+  ChevronRight, User, Building, TrendingUp, X, Loader, Edit2, Plus, Sparkles, ArrowRight
 } from 'lucide-react';
 import { 
   getCommunicationLogs, 
@@ -177,7 +177,13 @@ const CommunicationCenterPage = () => {
             <p className="text-xs font-bold text-blue-500/80 uppercase tracking-widest mt-1">Automated Stakeholder Communication</p>
           </div>
         </div>
-        <div>
+        <div className="flex items-center gap-3">
+          <button 
+            onClick={() => window.location.href = '/loss-engine'}
+            className="flex items-center gap-2 px-4 py-2 bg-teal-50 text-teal-700 font-bold text-sm rounded-xl hover:bg-teal-100 transition-colors border border-teal-200"
+          >
+            Next Step: Loss Engine <ArrowRight className="w-4 h-4" />
+          </button>
           <button 
             onClick={() => {
               setTriggerResult(null);
@@ -218,7 +224,8 @@ const CommunicationCenterPage = () => {
                 <div key={item._id || i} className="relative pl-6">
                   <div className={`absolute -left-[5px] top-1.5 w-2 h-2 rounded-full ring-4 ring-white ${
                     item.stakeholderType === 'Driver' ? 'bg-blue-500' :
-                    item.stakeholderType === 'Customer' ? 'bg-emerald-500' : 'bg-purple-500'
+                    item.stakeholderType === 'Customer' ? 'bg-emerald-500' : 
+                    item.stakeholderType === 'Operations' ? 'bg-orange-500' : 'bg-purple-500'
                   }`}></div>
                   <div className="flex justify-between items-start mb-1">
                     <div className="text-xs font-bold text-slate-400">{formatRelativeTime(item.createdAt)}</div>
@@ -229,11 +236,19 @@ const CommunicationCenterPage = () => {
                       {item.status}
                     </span>
                   </div>
-                  <div className="inline-flex items-center gap-1 text-[10px] uppercase tracking-wider font-bold text-slate-500 bg-slate-50 px-2 py-0.5 rounded mb-1">
-                    {item.stakeholderType === 'Driver' && <Truck className="w-3 h-3" />}
-                    {item.stakeholderType === 'Customer' && <User className="w-3 h-3" />}
-                    {item.stakeholderType === 'Warehouse' && <Building className="w-3 h-3" />}
-                    {item.stakeholderType} : {item.shipmentId}
+                  <div className="flex flex-wrap items-center gap-2 mb-1">
+                    <div className="inline-flex items-center gap-1 text-[10px] uppercase tracking-wider font-bold text-slate-500 bg-slate-50 px-2 py-0.5 rounded">
+                      {item.stakeholderType === 'Driver' && <Truck className="w-3 h-3" />}
+                      {item.stakeholderType === 'Customer' && <User className="w-3 h-3" />}
+                      {item.stakeholderType === 'Warehouse' && <Building className="w-3 h-3" />}
+                      {item.stakeholderType === 'Operations' && <Users className="w-3 h-3" />}
+                      {item.stakeholderType} : {item.shipmentId}
+                    </div>
+                    {item.isDemo && (
+                      <span className="px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider bg-purple-100 text-purple-700 border border-purple-200">
+                        Demo
+                      </span>
+                    )}
                   </div>
                   <div className="text-sm font-semibold text-slate-700 mt-1">{item.subject}</div>
                   <p className="text-xs text-slate-500 mt-0.5 line-clamp-2 leading-relaxed">{item.body}</p>
@@ -250,7 +265,7 @@ const CommunicationCenterPage = () => {
               <Mail className="w-5 h-5 text-slate-400" /> Message Templates & Previews
             </h2>
             <div className="flex bg-slate-100 p-1 rounded-xl self-start">
-              {['Driver', 'Customer', 'Warehouse'].map(tab => (
+              {['Driver', 'Customer', 'Warehouse', 'Operations'].map(tab => (
                 <button 
                   key={tab}
                   onClick={() => setActiveTab(tab)}
@@ -276,7 +291,8 @@ const CommunicationCenterPage = () => {
               activeTemplates.map((msg) => (
                 <div key={msg._id || msg.id} className={`bg-slate-50 rounded-xl border border-slate-200 p-5 border-l-4 ${
                   activeTab === 'Driver' ? 'border-l-blue-500' :
-                  activeTab === 'Customer' ? 'border-l-emerald-500' : 'border-l-purple-500'
+                  activeTab === 'Customer' ? 'border-l-emerald-500' : 
+                  activeTab === 'Operations' ? 'border-l-orange-500' : 'border-l-purple-500'
                 }`}>
                   <div className="flex justify-between items-start mb-3 gap-2">
                     <h3 className="font-bold text-slate-800 leading-snug">{msg.subject}</h3>

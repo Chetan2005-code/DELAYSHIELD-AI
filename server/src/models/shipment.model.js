@@ -23,6 +23,10 @@ const shipmentSchema = new mongoose.Schema(
       required: true,
       index: true
     },
+    isDemo: {
+      type: Boolean,
+      default: false
+    },
     origin: {
       type: coordinateSchema,
       required: true

@@ -20,7 +20,8 @@ function transformStoredShipment(shipment) {
       priority: shipment.priority,
       status: payload.status || shipment.status,
       riskScore: shipment.riskScore,
-      shipmentPayload: shipment.shipmentPayload
+      shipmentPayload: shipment.shipmentPayload,
+      isDemo: shipment.isDemo || false
     }
   }
 
@@ -34,17 +35,33 @@ function transformStoredShipment(shipment) {
     delay: shipment.delay,
     priority: shipment.priority,
     status: shipment.status,
-    riskScore: shipment.riskScore
+    riskScore: shipment.riskScore,
+    isDemo: shipment.isDemo || false
   }
 }
+
+import { systemSettings } from '../config/settings.js'
 
 export const getShipments = async (req, res) => {
   try {
     const shipments = await getShipmentsByUserId(req.user.id)
+    const showDemo = req.query.showDemo === 'true'
+
+    let filteredShipments = shipments;
+
+    if (systemSettings.demoMode) {
+      const liveCount = shipments.filter(s => !s.isDemo).length;
+      if (liveCount >= 5 && !showDemo) {
+        filteredShipments = shipments.filter(s => !s.isDemo);
+      }
+    } else {
+      // If demo mode is completely disabled globally
+      filteredShipments = shipments.filter(s => !s.isDemo);
+    }
 
     return res.status(200).json({
       success: true,
-      data: shipments.map(transformStoredShipment)
+      data: filteredShipments.map(transformStoredShipment)
     })
   } catch (error) {
     console.error('Shipment error:', error)

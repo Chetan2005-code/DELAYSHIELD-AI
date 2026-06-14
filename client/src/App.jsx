@@ -10,6 +10,7 @@ import {
 import DashboardPage from "./pages/DashboardPage";
 import ShipmentsPage from "./pages/ShipmentsPage";
 import AnalyticsPage from "./pages/AnalyticsPage";
+import DelayDNAPage from "./pages/DelayDNAPage";
 import Sidebar from "./components/Sidebar";
 import SLAGuardianPage from "./pages/SLAGuardianPage";
 import WarehouseIntelligencePage from "./pages/WarehouseIntelligencePage";
@@ -152,6 +153,14 @@ function AppShell() {
               }
             />
             <Route path="/share/:id" element={<SharedRoutePage />} />
+            <Route
+              path="/delay-dna"
+              element={
+                <ProtectedRoute>
+                  <DelayDNAPage />
+                </ProtectedRoute>
+              }
+            />
             <Route
               path="/analytics"
               element={

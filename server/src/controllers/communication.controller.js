@@ -3,9 +3,57 @@ import { CommunicationTemplate } from '../models/communicationTemplate.model.js'
 import { Shipment } from '../models/shipment.model.js'
 import { triggerAllStakeholderNotifications } from '../engine/communication/communicationEngine.js'
 
+import { systemSettings } from '../config/settings.js'
+
 export const getLogs = async (req, res) => {
   try {
-    const logs = await CommunicationLog.find().sort({ createdAt: -1 }).limit(100).lean()
+    let logs = await CommunicationLog.find().sort({ createdAt: -1 }).limit(100).lean()
+    
+    if (systemSettings.demoMode) {
+      const liveCount = await Shipment.countDocuments({ isDemo: false });
+      if (liveCount < 5) {
+        const demoLogs = [
+          {
+            _id: 'demo-log-1',
+            shipmentId: 'SHP-1002',
+            recipient: 'Driver D-2034',
+            channel: 'SMS',
+            eventType: 'Delay Risk',
+            subject: 'Traffic Congestion detected',
+            body: 'Traffic congestion detected ahead. Recommended Route: NH48 Express Corridor. Estimated Time Saving: 40 Mins.',
+            status: 'Delivered',
+            isDemo: true,
+            createdAt: new Date(Date.now() - 1000 * 60 * 5).toISOString()
+          },
+          {
+            _id: 'demo-log-2',
+            shipmentId: 'SHP-1003',
+            recipient: 'Warehouse WH-HYD-1 Manager',
+            channel: 'Email',
+            eventType: 'Warehouse Change',
+            subject: 'Congestion Alert: Incoming Shipment Redirected',
+            body: 'Warehouse congestion detected. Shipment SHP-1003 has been redirected to Alternate Hub to save 120 minutes.',
+            status: 'Delivered',
+            isDemo: true,
+            createdAt: new Date(Date.now() - 1000 * 60 * 30).toISOString()
+          },
+          {
+            _id: 'demo-log-3',
+            shipmentId: 'SHP-1005',
+            recipient: 'Reliance Industries (Customer)',
+            channel: 'Email',
+            eventType: 'Delay Risk',
+            subject: 'Critical SLA Breach Warning',
+            body: 'We are escalating shipment SHP-1005 via Air Freight to prevent a critical SLA breach. Estimated saving: 360 minutes.',
+            status: 'Delivered',
+            isDemo: true,
+            createdAt: new Date(Date.now() - 1000 * 60 * 60 * 2).toISOString()
+          }
+        ];
+        logs = [...demoLogs, ...logs];
+      }
+    }
+
     return res.status(200).json({
       success: true,
       data: logs

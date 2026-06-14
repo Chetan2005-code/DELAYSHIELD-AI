@@ -120,6 +120,7 @@ export const transformShipment = (s) => {
       ecoBadge: s.carbonImpact?.ecoBadge ?? (delay > 40 ? 'High Emission' : delay > 15 ? 'Moderate' : 'Eco Friendly'),
       emissionSaved: s.carbonImpact?.emissionSaved ?? Math.round(delay * 0.2)
     },
+    isDemo: s.isDemo || false,
     _raw: s,
   }
 }
@@ -314,11 +315,11 @@ export const getCachedShipments = () => {
   return null;
 }
 
-export const getShipments = async (force = false) => {
+export const getShipments = async (force = false, showDemo = false) => {
   if (!force && cachedShipments && Date.now() - cachedShipmentsTime < 30000) {
     return cachedShipments;
   }
-  const response = await api.get('/shipment')
+  const response = await api.get(`/shipment?showDemo=${showDemo}`)
   const shipments = response.data?.data || response.data || []
   cachedShipments = shipments.map(transformShipment)
   cachedShipmentsTime = Date.now()
@@ -493,6 +494,21 @@ export const updateCommunicationTemplate = async (id, data) => {
 export const triggerManualNotification = async (payload) => {
   const response = await api.post('/communication/trigger', payload)
   return response.data
+}
+
+export const getDashboardMetrics = async () => {
+  const response = await api.get('/dashboard')
+  return response.data?.data || response.data
+}
+
+export const getAnalyticsMetrics = async () => {
+  const response = await api.get('/analytics')
+  return response.data?.data || response.data
+}
+
+export const getDelayDNAInsights = async () => {
+  const response = await api.get('/dna')
+  return response.data?.data || response.data
 }
 
 export default api

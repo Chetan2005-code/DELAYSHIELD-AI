@@ -31,6 +31,13 @@ router.use('/communication', communicationRoutes)
 router.use('/sla', slaGuardianRoutes)
 router.use('/warehouse', warehouseRoutes)
 
+import dnaRoutes from './dna.route.js'
+import dashboardRoutes from './dashboard.route.js'
+import analyticsRoutes from './analytics.route.js'
+
+router.use('/dna', dnaRoutes)
+router.use('/dashboard', dashboardRoutes)
+router.use('/analytics', analyticsRoutes)
 router.post('/analyze-shipment', requireAuth, generateDynamicShipment)
 
 export default router

@@ -47,6 +47,18 @@ export async function calculateWarehouseStats(warehouse, allWarehouses) {
     risk = 'Low'
   }
 
+  const baselineIncomingRate = (warehouse.processingSpeed || 50) * 0.85
+  const predictedLoad6h = Math.max(0, activeLoad - ((warehouse.processingSpeed || 50) * 6) + (baselineIncomingRate * 6))
+  const predictedUtil6h = Math.min(100, Math.round((predictedLoad6h / warehouse.capacity) * 100))
+
+  const predictedLoad12h = Math.max(0, activeLoad - ((warehouse.processingSpeed || 50) * 12) + (baselineIncomingRate * 12))
+  const predictedUtil12h = Math.min(100, Math.round((predictedLoad12h / warehouse.capacity) * 100))
+
+  let congestionProbability = 0
+  if (predictedUtil6h > 85 || predictedUtil12h > 85) congestionProbability = Math.round(80 + Math.random() * 15)
+  else if (predictedUtil6h > 70) congestionProbability = Math.round(40 + Math.random() * 20)
+  else congestionProbability = Math.round(5 + Math.random() * 10)
+
   return {
     ...warehouse,
     incomingVolume,
@@ -56,7 +68,10 @@ export async function calculateWarehouseStats(warehouse, allWarehouses) {
     status,
     color,
     risk,
-    incomingShipmentsCount: incomingShipments.length
+    incomingShipmentsCount: incomingShipments.length,
+    predictedUtil6h,
+    predictedUtil12h,
+    congestionProbability
   }
 }
 
@@ -129,4 +144,46 @@ export async function getAlternativeRecommendations(congestedWarehouse, allStats
 
   // Return recommendations sorted by most time saved
   return recommendations.sort((a, b) => b.timeSavedMinutes - a.timeSavedMinutes)
+}
+
+export function getShipmentAlternativeRecommendation(shipmentLoc, congestedWarehouse, allStats) {
+  const alternatives = allStats.filter(wh => wh.id !== congestedWarehouse.id && wh.util < congestedWarehouse.util)
+  if (alternatives.length === 0) return null
+
+  let bestAlt = null
+  let maxNetSavedMinutes = 0
+
+  for (const alt of alternatives) {
+    const distToOrig = getHaversineDistance(shipmentLoc, congestedWarehouse.location)
+    const distToAlt = getHaversineDistance(shipmentLoc, alt.location)
+    
+    const distanceDeltaKm = distToAlt - distToOrig
+    const transitOverheadHours = distanceDeltaKm / 60.0
+
+    const queueTimeOrigHours = congestedWarehouse.queueTimeHours
+    const queueTimeAltHours = alt.queueTimeHours
+
+    const netSavedHours = queueTimeOrigHours - (queueTimeAltHours + transitOverheadHours)
+    const netSavedMinutes = Math.round(netSavedHours * 60)
+
+    if (netSavedMinutes > maxNetSavedMinutes) {
+      maxNetSavedMinutes = netSavedMinutes
+      bestAlt = alt
+    }
+  }
+
+  if (bestAlt && maxNetSavedMinutes > 15) {
+    const queueReduction = Math.round(((congestedWarehouse.queueTimeHours - bestAlt.queueTimeHours) / congestedWarehouse.queueTimeHours) * 100)
+    return {
+      recommendedWarehouseId: bestAlt.id,
+      recommendedWarehouseName: bestAlt.name,
+      utilization: bestAlt.util,
+      timeSavedMinutes: maxNetSavedMinutes,
+      timeSavedFormatted: maxNetSavedMinutes >= 60 
+        ? `${Math.floor(maxNetSavedMinutes / 60)}h ${maxNetSavedMinutes % 60}m` 
+        : `${maxNetSavedMinutes} min`,
+      queueReduction: queueReduction > 0 ? queueReduction : 0
+    }
+  }
+  return null
 }

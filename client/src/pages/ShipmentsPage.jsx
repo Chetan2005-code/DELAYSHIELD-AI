@@ -177,11 +177,12 @@ const CreateShipmentModal = ({ isOpen, onClose, onCreate }) => {
 };
 
 const ShipmentsPage = () => {
-  const { shipments, isLoading, addShipment, analyzeShipmentSLA } = useShipments();
+  const { shipments, isLoading, addShipment, analyzeShipmentSLA, fetchShipments } = useShipments();
   const [activeFilter, setActiveFilter] = useState('All');
   const [searchQuery, setSearchQuery] = useState('');
   const [page, setPage] = useState(1);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [showDemo, setShowDemo] = useState(false);
   const itemsPerPage = 15;
 
   const handleCreateShipment = async (payload) => {
@@ -195,6 +196,12 @@ const ShipmentsPage = () => {
       alert("Error creating shipment.");
       console.error(error);
     }
+  };
+
+  const handleToggleDemo = () => {
+    const newVal = !showDemo;
+    setShowDemo(newVal);
+    fetchShipments(newVal);
   };
 
   const filteredData = useMemo(() => {
@@ -241,6 +248,15 @@ const ShipmentsPage = () => {
           </div>
         </div>
         <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 mr-2">
+            <span className="text-xs font-bold text-slate-500 uppercase">Show Demo</span>
+            <button 
+              onClick={handleToggleDemo}
+              className={`w-10 h-5 rounded-full relative transition-colors ${showDemo ? 'bg-blue-600' : 'bg-slate-300'}`}
+            >
+              <div className={`w-3.5 h-3.5 bg-white rounded-full absolute top-0.5 transition-transform ${showDemo ? 'translate-x-5' : 'translate-x-1'}`} />
+            </button>
+          </div>
           <div className="relative">
             <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
             <input 
@@ -296,6 +312,7 @@ const ShipmentsPage = () => {
                   <th className="p-4">ETA</th>
                   <th className="p-4">Risk Level</th>
                   <th className="p-4">Mode</th>
+                  <th className="p-4">Action</th>
                 </tr>
               </thead>
               <tbody className="text-sm">
@@ -305,7 +322,16 @@ const ShipmentsPage = () => {
                   
                   return (
                     <tr key={row.id} className="hover:bg-blue-50/50 transition-colors border-b border-slate-50 last:border-0 group">
-                      <td className="p-4 font-bold text-slate-700">{row.id}</td>
+                      <td className="p-4 font-bold text-slate-700">
+                        <div className="flex items-center gap-2">
+                          {row.id}
+                          {row.isDemo && (
+                            <span className="px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider bg-purple-100 text-purple-700 border border-purple-200">
+                              Demo
+                            </span>
+                          )}
+                        </div>
+                      </td>
                       <td className="p-4 text-slate-600">{row.origin?.name || row.origin}</td>
                       <td className="p-4 text-slate-600">{row.destination?.name || row.destination}</td>
                       <td className="p-4">
@@ -324,6 +350,16 @@ const ShipmentsPage = () => {
                           <Truck className="w-3.5 h-3.5" />
                           <span className="text-xs font-semibold">{row.cargoType || 'General'}</span>
                         </div>
+                      </td>
+                      <td className="p-4">
+                        <button 
+                          onClick={() => {
+                            window.location.href = `/tracking?shipment=${row.id}`;
+                          }} 
+                          className="bg-blue-50 text-blue-600 hover:bg-blue-100 px-3 py-1.5 rounded-lg text-xs font-bold transition-colors"
+                        >
+                          Track
+                        </button>
                       </td>
                     </tr>
                   );

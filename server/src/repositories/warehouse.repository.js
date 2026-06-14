@@ -11,6 +11,14 @@ export const defaultWarehouses = [
     location: { name: 'Chennai, Tamil Nadu', lat: 13.0827, lon: 80.2707 }
   },
   {
+    id: 'WH-Chennai-3',
+    name: 'WH-Chennai-Relief',
+    capacity: 500,
+    currentLoad: 50,
+    processingSpeed: 60,
+    location: { name: 'Chennai Suburbs, Tamil Nadu', lat: 13.0000, lon: 80.2000 }
+  },
+  {
     id: 'WH-Mumbai-1',
     name: 'WH-Mumbai-1',
     capacity: 500,

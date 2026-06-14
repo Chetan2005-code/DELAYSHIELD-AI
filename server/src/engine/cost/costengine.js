@@ -127,9 +127,14 @@ export const calculateCostImpact = ({
   const rerouteResult = calcRerouteCost(routeData);
 
   // Savings
-  const savings =
+  const calculatedSavings =
     rerouteResult !== null
       ? noActionCost - rerouteResult.rerouteCost
+      : null;
+
+  const savings =
+    calculatedSavings !== null
+      ? Math.max(0, calculatedSavings)
       : null;
 
   // Recommendation
@@ -163,6 +168,7 @@ export const calculateCostImpact = ({
     currency: "INR",
     recommendation,
     confidence,
+    confidenceType: "Data Reliability",
     ...(aiRouteSuggestion && { suggestedRoute: aiRouteSuggestion }),
     breakdown,
   };
@@ -173,12 +179,26 @@ export const calculateCostImpact = ({
  * Calculates financial loss based on delay metrics.
  */
 export const calculateLossImpact = (delay = 0) => {
-  const FUEL_RATE_PER_MINUTE = 25; // ₹25 per minute of idling/delay
-  const PENALTY_PER_HOUR = 8000;   // ₹8000 penalty for commercial delay
+  const FUEL_RATE_PER_MINUTE = 5; // ~₹300/hour
+
+  const PENALTY_BASE = 500;      // after 30 min delay
+  const PENALTY_CRITICAL = 1000; // after 120 min delay
 
   const normalizedDelay = Math.max(0, delay);
   const fuelLoss = normalizedDelay * FUEL_RATE_PER_MINUTE;
-  const penalty = normalizedDelay > 30 ? (normalizedDelay / 60) * PENALTY_PER_HOUR : 0;
+
+  let penalty = 0;
+
+  if (normalizedDelay > 120) {
+    penalty =
+      ((120 - 30) / 60) * PENALTY_BASE +
+      ((normalizedDelay - 120) / 60) * PENALTY_CRITICAL;
+  }
+  else if (normalizedDelay > 30) {
+    penalty =
+      ((normalizedDelay - 30) / 60) * PENALTY_BASE;
+  }
+
   const totalLoss = fuelLoss + penalty;
 
   return {
@@ -186,7 +206,7 @@ export const calculateLossImpact = (delay = 0) => {
     penaltyRisk: Math.round(penalty),
     totalLoss: Math.round(totalLoss),
     delayMinutes: normalizedDelay,
-    severity: totalLoss > 15000 ? 'High' : totalLoss > 5000 ? 'Medium' : 'Low'
+    severity: totalLoss > 5000 ? 'Critical' : totalLoss > 2000 ? 'High' : totalLoss > 500 ? 'Medium' : 'Low'
   };
 };
 

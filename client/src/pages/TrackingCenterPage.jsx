@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
   Navigation, Eye, Package, Clock, Truck, MapPin, 
@@ -153,6 +153,42 @@ const TrackingCenterPage = () => {
     return shipments.find(s => s.id === activeShipmentId) || shipments[0];
   }, [shipments, activeShipmentId]);
 
+  const [activeRouteData, setActiveRouteData] = useState(null);
+  const [isRouteLoading, setIsRouteLoading] = useState(false);
+
+  useEffect(() => {
+    if (!activeShipment) return;
+    let isMounted = true;
+    
+    const fetchRouteData = async () => {
+      setIsRouteLoading(true);
+      try {
+        const payload = {
+          origin: activeShipment.origin,
+          destination: activeShipment.destination,
+          traffic: activeShipment.traffic,
+          weather: activeShipment.weather
+        };
+        // We only need the route geometry, but we can hit analyze endpoint 
+        // to get the same robust backend route fetching as ShipmentDetailsPage
+        const { analyzeShipment, transformAnalysis } = await import('../services/api');
+        const data = await analyzeShipment(payload);
+        const transformed = transformAnalysis(data);
+        if (isMounted && transformed?.route) {
+          setActiveRouteData(transformed.route);
+        }
+      } catch (error) {
+        console.error("Failed to fetch robust route:", error);
+      } finally {
+        if (isMounted) setIsRouteLoading(false);
+      }
+    };
+    
+    fetchRouteData();
+    
+    return () => { isMounted = false; };
+  }, [activeShipment]);
+
   const kpis = useMemo(() => {
     return {
       tracked: shipments.length,
@@ -276,7 +312,7 @@ const TrackingCenterPage = () => {
           
           <div className="flex-1 relative bg-slate-100">
              {activeShipment && (
-               <MapView shipment={activeShipment} hideControls={false} />
+               <MapView shipment={activeShipment} route={activeRouteData} hideControls={false} />
              )}
           </div>
         </div>
