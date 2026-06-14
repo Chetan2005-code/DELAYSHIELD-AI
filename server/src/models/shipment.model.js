@@ -55,6 +55,11 @@ const shipmentSchema = new mongoose.Schema(
       type: Number,
       default: 0
     },
+    warehouseId: {
+      type: String,
+      default: null,
+      index: true
+    },
     shipmentPayload: {
       type: mongoose.Schema.Types.Mixed,
       default: null

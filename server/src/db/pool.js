@@ -1,5 +1,6 @@
 import dotenv from 'dotenv'
 import mongoose from 'mongoose'
+import { seedWarehouses } from '../repositories/warehouse.repository.js'
 
 dotenv.config()
 
@@ -22,6 +23,13 @@ export async function initDatabase() {
   await mongoose.connect(mongoUri, {
     dbName: databaseName
   })
+
+  try {
+    await seedWarehouses()
+    console.log('[db] Warehouse database seeded successfully')
+  } catch (err) {
+    console.error('[db] Warehouse database seeding failed:', err.message)
+  }
 
   return mongoose.connection
 }

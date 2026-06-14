@@ -1,10 +1,17 @@
-/* eslint-disable react-refresh/only-export-components */
-import React, { createContext, useContext, useMemo, useState } from 'react';
+import React, { createContext, useContext, useMemo, useState, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 
 const NavigationLoadingContext = createContext(null);
 
 export function NavigationLoadingProvider({ children }) {
   const [pendingPath, setPendingPath] = useState(null);
+  const location = useLocation();
+
+  useEffect(() => {
+    if (pendingPath) {
+      setPendingPath(null);
+    }
+  }, [location.pathname]);
 
   const value = useMemo(() => ({
     pendingPath,
