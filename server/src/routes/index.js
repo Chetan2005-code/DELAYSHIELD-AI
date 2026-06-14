@@ -9,6 +9,7 @@ import decisionRoutes from './decision.route.js'
 import authRoutes from './auth.route.js'
 import communicationRoutes from './communication.routes.js'
 import slaGuardianRoutes from './slaGuardian.route.js'
+import warehouseRoutes from './warehouse.route.js'
 import { generateDynamicShipment } from '../controllers/analyze.controller.js'
 import { requireAuth } from '../middleware/auth.middleware.js'
 
@@ -28,6 +29,7 @@ router.use('/risk', riskRoutes)
 router.use('/decision', decisionRoutes)
 router.use('/communication', communicationRoutes)
 router.use('/sla', slaGuardianRoutes)
+router.use('/warehouse', warehouseRoutes)
 
 router.post('/analyze-shipment', requireAuth, generateDynamicShipment)
 

@@ -413,6 +413,26 @@ export const createDynamicShipment = async (origin, destination) => {
   return response.data
 }
 
+export const getWarehouseAnalytics = async () => {
+  const response = await api.get('/warehouse')
+  return response.data
+}
+
+export const redirectWarehouseShipment = async (shipmentId, recommendedWarehouseId) => {
+  const response = await api.post('/warehouse/redirect', { shipmentId, recommendedWarehouseId })
+  return response.data
+}
+
+export const resetWarehouseSimulation = async () => {
+  const response = await api.post('/warehouse/reset')
+  return response.data
+}
+
+export const simulateWarehouseSurge = async (id, currentLoad) => {
+  const response = await api.post('/warehouse/surge', { id, currentLoad })
+  return response.data
+}
+
 export const transformGeneratedShipment = (data) => {
   if (!data?.shipment) return null
 

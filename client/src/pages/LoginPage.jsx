@@ -123,13 +123,38 @@ const LoginPage = () => {
     };
   }, [location.state?.from, navigate, signInWithGoogle]);
 
-  useEffect(() => {
-    if (
-      !googleReady ||
-      !googleButtonRef.current ||
-      !window.google?.accounts?.id
-    )
+  const handleGoogleFallbackClick = () => {
+    if (!window.google?.accounts?.id) {
+      setError("Google sign-in is not available. Please try the manual login.");
       return;
+    }
+
+    setError("");
+
+    window.google.accounts.id.prompt((notification) => {
+      if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
+        const reason =
+          notification.getNotDisplayedReason?.() ||
+          notification.getSkippedReason?.();
+
+        if (reason === "unregistered_origin" || reason === "invalid_client") {
+          setError(
+            `Google sign-in is blocked for this frontend origin. Add ${window.location.origin} to the OAuth client's Authorized JavaScript origins in Google Cloud Console.`,
+          );
+          return;
+        }
+
+        setError(
+          "Google popup was blocked or unavailable. Please use the Google button above or allow popups.",
+        );
+      }
+    });
+  };
+
+  useEffect(() => {
+    if (!googleReady || !window.google?.accounts?.id || !googleButtonRef.current) {
+      return;
+    }
 
     googleButtonRef.current.innerHTML = "";
     window.google.accounts.id.renderButton(googleButtonRef.current, {
@@ -137,7 +162,7 @@ const LoginPage = () => {
       size: "large",
       shape: "pill",
       text: tab === "signup" ? "signup_with" : "signin_with",
-      width: 360,
+      width: googleButtonRef.current.offsetWidth || 360,
     });
   }, [googleReady, tab]);
 
@@ -273,10 +298,18 @@ const LoginPage = () => {
             <div className="mt-8">
               <div
                 ref={googleButtonRef}
-                className="flex min-h-[56px] items-center justify-center overflow-hidden rounded-2xl bg-white"
+                className="min-h-[44px] w-full flex items-center justify-center"
+              />
+              <button
+                type="button"
+                disabled={booting || !googleReady}
+                onClick={handleGoogleFallbackClick}
+                className="mt-3 w-full rounded-2xl border border-slate-200 bg-white px-5 py-3 text-xs font-black uppercase tracking-[0.16em] text-slate-600 shadow-sm transition hover:bg-slate-50 hover:shadow-md disabled:cursor-not-allowed disabled:opacity-60"
               >
-                {booting ? "Loading Google..." : null}
-              </div>
+                {booting
+                  ? "Loading Google..."
+                  : "Trouble with Google button? Retry popup"}
+              </button>
             </div>
           ) : null}
 

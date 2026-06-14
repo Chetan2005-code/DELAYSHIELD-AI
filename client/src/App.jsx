@@ -13,6 +13,7 @@ import AnalyticsPage from "./pages/AnalyticsPage";
 import Sidebar from "./components/Sidebar";
 import SLAGuardianPage from "./pages/SLAGuardianPage";
 import WarehouseIntelligencePage from "./pages/WarehouseIntelligencePage";
+import WarehouseDetailPage from "./pages/WarehouseDetailPage";
 import CommunicationCenterPage from "./pages/CommunicationCenterPage";
 import TrackingCenterPage from "./pages/TrackingCenterPage";
 import SettingsPage from "./pages/SettingsPage";
@@ -123,6 +124,14 @@ function AppShell() {
               element={
                 <ProtectedRoute>
                   <WarehouseIntelligencePage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/warehouse/:id"
+              element={
+                <ProtectedRoute>
+                  <WarehouseDetailPage />
                 </ProtectedRoute>
               }
             />
