@@ -11,7 +11,8 @@ import {
   MessageSquare,
   Navigation,
   Settings,
-  RefreshCw
+  RefreshCw,
+  Dna
 } from 'lucide-react'
 import { useNavigationLoading } from './NavigationLoadingContext'
 import { useAuth } from '../auth/AuthContext'
@@ -30,6 +31,7 @@ const Sidebar = () => {
     { to: '/communication', icon: MessageSquare, label: 'Communication Center' },
     { to: '/tracking', icon: Navigation, label: 'Tracking Center' },
     { to: '/analytics', icon: BarChart3, label: 'Analytics' },
+    { to: '/delay-dna', icon: Dna, label: 'Delay DNA' },
     { to: '/loss-engine', icon: TrendingUp, label: 'Loss Engine' },
     { to: '/settings', icon: Settings, label: 'Settings' },
   ]
