@@ -22,6 +22,8 @@ import LoginPage from "./pages/LoginPage";
 import LossImpactPage from "./pages/LossImpactPage";
 import LandingPage from "./pages/LandingPage";
 import SharedRoutePage from "./pages/SharedRoutePage";
+import ShipmentDetailsPage from "./pages/ShipmentDetailsPage";
+import SimulationPage from "./pages/SimulationPage";
 import ProtectedRoute from "./components/ProtectedRoute";
 import { NavigationLoadingProvider } from "./components/NavigationLoadingContext";
 import { useAuth } from "./auth/AuthContext";
@@ -182,6 +184,22 @@ function AppShell() {
               element={
                 <ProtectedRoute>
                   <SettingsPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/shipment/:id"
+              element={
+                <ProtectedRoute>
+                  <ShipmentDetailsPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/simulation"
+              element={
+                <ProtectedRoute>
+                  <SimulationPage />
                 </ProtectedRoute>
               }
             />

@@ -4,7 +4,7 @@
  */
 import { calculateRisk } from "../risk/riskengine.js";
 import { makeDecision } from "../decision/decisionengine.js";
-import { calculateCostImpact } from "../cost/costengine.js";
+import { calculateCostImpact, calculateCarbonImpact } from "../cost/costengine.js";
 import { simulateTraffic } from "../../utils/simulatetraffic.js";
 // ─────────────────────────────────────────────
 // HELPERS
@@ -15,11 +15,11 @@ const safeNum = (value, fallback = 0) => {
   return isNaN(parsed) ? fallback : parsed;
 };
 
-const formatChange = (diff, unit = "") => {
+const formatChange = (diff, unit = "", suffix = "") => {
   if (diff === 0) return `No change`;
   const sign = diff > 0 ? "+" : "";
   const direction = diff > 0 ? "increase" : "decrease";
-  return `${sign}${unit}${Math.abs(diff)} ${direction}`;
+  return `${sign}${unit}${Math.abs(diff)}${suffix} ${direction}`;
 };
 
 import { generateAIPlan } from "../decision/aiplanner.js";
@@ -47,6 +47,11 @@ const runScenario = async (input) => {
     routeData: routeData ?? null,
   });
 
+  const carbon = calculateCarbonImpact({
+    distanceMeters: routeData?.distance || 210000,
+    delayMinutes: safeNum(delay),
+  });
+
   const aiPlannerResult = await generateAIPlan({
     risk: {
       ...risk,
@@ -69,6 +74,7 @@ const runScenario = async (input) => {
     risk, 
     decision, 
     cost, 
+    carbon,
     ai: aiPlannerResult?.data || null, 
     explanation: explanationResult 
   };
@@ -92,6 +98,15 @@ const buildComparison = (original, simulated) => {
       ? ((costChange / original.cost.noActionCost) * 100).toFixed(2)
       : "0.00";
 
+  const carbonChange = Math.round(
+    simulated.carbon.totalCO2 - original.carbon.totalCO2
+  );
+
+  const percentCarbonChange =
+    original.carbon.totalCO2 > 0
+      ? ((carbonChange / original.carbon.totalCO2) * 100).toFixed(2)
+      : "0.00";
+
   const decisionChanged =
     original.decision.action !== simulated.decision.action;
 
@@ -104,7 +119,7 @@ const buildComparison = (original, simulated) => {
 
   // 🔥 Impact Score (custom metric)
   const impactScore = Math.round(
-    Math.abs(riskScoreChange) + Math.abs(costChange / 10)
+    Math.abs(riskScoreChange) + Math.abs(costChange / 10) + Math.abs(carbonChange / 2)
   );
 
   return {
@@ -133,15 +148,24 @@ const buildComparison = (original, simulated) => {
         original: original.cost.recommendation,
         simulated: simulated.cost.recommendation,
       },
+      carbon: {
+        original: original.carbon.totalCO2,
+        simulated: simulated.carbon.totalCO2,
+        originalEcoBadge: original.carbon.ecoBadge,
+        simulatedEcoBadge: simulated.carbon.ecoBadge,
+      },
     },
 
     difference: {
       riskScoreChange,
       costChange,
       percentCostChange: `${percentCostChange}%`,
+      carbonChange,
+      percentCarbonChange: `${percentCarbonChange}%`,
       decisionChange,
       riskScoreFormatted: formatChange(riskScoreChange),
       costChangeFormatted: formatChange(costChange, "₹"),
+      carbonChangeFormatted: formatChange(carbonChange, "", " kg"),
       decisionChanged,
       riskLevelChanged,
       impactScore, // 🔥 highlight this in UI
