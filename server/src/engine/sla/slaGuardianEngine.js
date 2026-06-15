@@ -1,7 +1,7 @@
 import { calculateRisk } from '../risk/riskengine.js';
 import { generateAIPlan } from '../decision/aiplanner.js';
 import { explainDecision } from '../decision/aiExplainer.js';
-import { calculateCostImpact, calculateLossImpact } from '../cost/costengine.js';
+import { calculateCostImpact, calculateLossImpact, calculateCarbonImpact } from '../cost/costengine.js';
 
 export const analyzeShipmentSLA = async (shipmentData) => {
   // 1. Risk Engine
@@ -38,6 +38,8 @@ export const analyzeShipmentSLA = async (shipmentData) => {
     primaryCause: "System Delay",
     recommendedActions: ["Monitor Conditions"],
     suggestedRoute: "Baseline Route",
+    suggestedEcoRoute: "Green Corridor Bypass",
+    ecoSavingsExplanation: "Reduces idling emissions in urban traffic zones.",
     recoveryReasoning: "Fallback triggered."
   };
 
@@ -70,6 +72,11 @@ export const analyzeShipmentSLA = async (shipmentData) => {
     routeData: actualRouteData
   });
 
+  const carbonImpact = calculateCarbonImpact({
+    distanceMeters: actualRouteData.distance || 0,
+    delayMinutes: delayMins || 0
+  });
+
   // 4. Explainer
   const explanation = explainDecision({
     risk: riskResult,
@@ -90,6 +97,8 @@ export const analyzeShipmentSLA = async (shipmentData) => {
       primaryCause: recoveryPlan.primaryCause,
       recommendedActions: recoveryPlan.recommendedActions,
       suggestedRoute: recoveryPlan.suggestedRoute,
+      suggestedEcoRoute: recoveryPlan.suggestedEcoRoute || "Green Corridor Bypass",
+      ecoSavingsExplanation: recoveryPlan.ecoSavingsExplanation || "Reduces idling emissions in urban traffic zones.",
       estimatedTimeSaved,
       lossPrevented,
       savings: Math.max(0, costImpact.savings || 0),
@@ -100,6 +109,7 @@ export const analyzeShipmentSLA = async (shipmentData) => {
       summary: explanation.summary,
       keyFactors: explanation.keyFactors,
       explanation: explanation.explanation
-    }
+    },
+    carbonImpact
   };
 };

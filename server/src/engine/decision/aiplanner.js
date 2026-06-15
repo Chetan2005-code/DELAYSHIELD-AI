@@ -5,7 +5,7 @@ dotenv.config();
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 
-const SYSTEM_PROMPT = `You are the DelayShield SLA Recovery Planner AI. Your objective is to analyze SLA risk telemetry and recommend optimal recovery actions to prevent SLA breaches.
+const SYSTEM_PROMPT = `You are the DelayShield SLA Recovery Planner AI. Your objective is to analyze SLA risk telemetry and recommend optimal recovery actions to prevent SLA breaches, while also finding the cleanest, most eco-friendly alternative route to reduce CO2 emissions.
 
 RECOVERY RULES to strictly follow:
 - If Warehouse > 80, Recommend: "Switch Warehouse"
@@ -21,6 +21,8 @@ You must respond ONLY with a valid JSON object matching this exact schema. Do no
     "String (Specific actionable recommendation 2)"
   ],
   "suggestedRoute": "String (Specific National Highway (NH) or Alternative Path)",
+  "suggestedEcoRoute": "String (Alternative eco-friendly route with lower emissions/traffic, e.g. 'NH-Alt-Eco via Green Corridor')",
+  "ecoSavingsExplanation": "String (Explain why this route is cleaner, e.g. 'Bypasses urban bottleneck to save 35 kg of CO2 emissions')",
   "recoveryReasoning": "String (1-2 sentence explanation of why these actions were chosen)"
 }`;
 
@@ -42,10 +44,10 @@ export const generateAIPlan = async (input = {}) => {
   const timeoutId = setTimeout(() => controller.abort(), 30000);
 
   const { 
-    slaRisk = 0,
-    traffic = 0,
-    warehouse = 0,
-    historicalDelay = 0,
+    slaRisk = input.risk?.score || input.slaRisk || 0,
+    traffic = input.risk?.traffic || input.traffic || 0,
+    warehouse = input.risk?.warehouse || input.warehouse || 0,
+    historicalDelay = input.risk?.historicalDelay || input.historicalDelay || 0,
     shipmentId = "SHP-0", 
     origin = "Origin", 
     destination = "Destination" 
@@ -95,6 +97,8 @@ export const generateAIPlan = async (input = {}) => {
         primaryCause: "System Telemetry Unavailable",
         recommendedActions: ["Monitor Conditions Manually", "Alert Dispatcher"],
         suggestedRoute: "Current Baseline Route",
+        suggestedEcoRoute: "Green Corridor Bypass",
+        ecoSavingsExplanation: "Reduces idling emissions in urban traffic zones.",
         recoveryReasoning: "Neural link unavailable. Defaulting to standard operational protocols.",
         shipmentId
       }
@@ -103,7 +107,7 @@ export const generateAIPlan = async (input = {}) => {
 };
 
 function validateAIPayload(payload) {
-  const requiredStrings = ["primaryCause", "suggestedRoute", "recoveryReasoning"];
+  const requiredStrings = ["primaryCause", "suggestedRoute", "suggestedEcoRoute", "ecoSavingsExplanation", "recoveryReasoning"];
   for (const field of requiredStrings) {
     if (typeof payload[field] !== "string" || !payload[field].trim()) {
       throw new Error(`AI payload missing or invalid field: "${field}"`);

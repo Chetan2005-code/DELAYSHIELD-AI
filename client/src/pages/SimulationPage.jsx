@@ -69,11 +69,17 @@ function normalizeRun(run = {}) {
   const decision = typeof run.decision === "object"
     ? run.decision?.action
     : run.decision;
+  const carbon = typeof run.carbon === "object"
+    ? toNumber(run.carbon?.totalCO2)
+    : (run.carbonImpact ? toNumber(run.carbonImpact?.totalCO2) : 0);
+  const ecoBadge = run.carbon?.ecoBadge || run.carbonImpact?.ecoBadge || "Moderate";
 
   return {
     risk,
     cost,
     decision: decision || "UNKNOWN",
+    carbon,
+    ecoBadge,
   };
 }
 
@@ -83,6 +89,7 @@ function normalizeComparison(item = {}) {
     difference: {
       risk: toNumber(diff.risk ?? diff.riskScoreChange),
       cost: toNumber(diff.cost ?? diff.costChange),
+      carbon: toNumber(diff.carbon ?? diff.carbonChange),
       decisionChange: diff.decisionChange ?? null,
     },
     impactScore: toNumber(item.impactScore ?? diff.impactScore),
@@ -121,6 +128,16 @@ function normalizeSimulationData(payload) {
 function normalizeScenarioNames(names, count) {
   if (Array.isArray(names) && names.length === count + 1) return names;
   return ["Base", ...Array.from({ length: count }, (_, index) => `S${index + 1}`)];
+}
+
+function EcoBadge({ badge }) {
+  const bg = badge === 'Eco Friendly' ? 'bg-emerald-100' : badge === 'Moderate' ? 'bg-amber-100' : 'bg-red-100';
+  const text = badge === 'Eco Friendly' ? 'text-emerald-700' : badge === 'Moderate' ? 'text-amber-700' : 'text-red-700';
+  return (
+    <span className={`inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-bold ${bg} ${text}`}>
+      {badge || 'Moderate'}
+    </span>
+  );
 }
 
 // ─── Main Page ────────────────────────────────────────────────────────────────
@@ -187,6 +204,8 @@ function ResultsSection({ data, scNames }) {
           { label: "Risk level", value: <RiskBadge score={original.risk} /> },
           { label: "Decision",   value: original.decision,  small: true },
           { label: "Cost",       value: `₹${original.cost.toLocaleString()}` },
+          { label: "Carbon footprint", value: `${original.carbon || 0} kg CO₂` },
+          { label: "Eco badge",  value: <EcoBadge badge={original.ecoBadge} /> },
         ]} />
       </Card>
 
@@ -214,10 +233,13 @@ function ResultsSection({ data, scNames }) {
                 { label: "Risk level", value: <RiskBadge score={sc.risk} /> },
                 { label: "Decision",   value: sc.decision,  small: true },
                 { label: "Cost",       value: `₹${sc.cost.toLocaleString()}` },
+                { label: "Carbon footprint", value: `${sc.carbon || 0} kg CO₂` },
+                { label: "Eco badge",  value: <EcoBadge badge={sc.ecoBadge} /> },
               ]} />
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-2.5">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 mt-2.5">
                 <DiffCell label="Risk change" val={diff.risk ?? 0} />
                 <DiffCell label="Cost change" val={diff.cost ?? 0} prefix="₹" />
+                <DiffCell label="Carbon change" val={diff.carbon ?? 0} suffix=" kg" />
                 {diff.decisionChange && (
                   <DiffCell label="Decision change" text={diff.decisionChange} wide />
                 )}
@@ -270,14 +292,16 @@ function ScenarioCharts({ original, simulated, scNames, bestIdx }) {
   const TABS = [
     { key: "risk",   label: "Risk score" },
     { key: "cost",   label: "Cost" },
+    { key: "carbon", label: "Carbon footprint" },
     { key: "impact", label: "Impact" },
     { key: "radar",  label: "Radar" },
   ];
 
   const riskData   = [original.risk,  ...simulated.map(s => s.risk)];
   const costData   = [original.cost,  ...simulated.map(s => s.cost)];
+  const carbonData = [original.carbon || 0, ...simulated.map(s => s.carbon || 0)];
   const impactData = [0, ...simulated.map(s =>
-    Math.round(Math.abs(s.risk - original.risk) * 0.6 + Math.abs(s.cost - original.cost) * 0.00016)
+    Math.round(Math.abs(s.risk - original.risk) * 0.6 + Math.abs(s.cost - original.cost) * 0.00016 + Math.abs((s.carbon || 0) - (original.carbon || 0)) * 0.1)
   )];
   const barColors  = scNames.map((_, i) =>
     i === 0 ? "#93c5fd" : i - 1 === bestIdx ? "#4ade80" : riskMeta(simulated[i - 1]?.risk ?? 0).color
@@ -285,12 +309,14 @@ function ScenarioCharts({ original, simulated, scNames, bestIdx }) {
   const radarData  = [
     { metric: "Risk",     values: riskData },
     { metric: "Cost÷100", values: costData.map(v => Math.round(v / 100)) },
+    { metric: "Carbon",   values: carbonData },
     { metric: "Impact",   values: impactData },
   ];
 
   const NOTES = {
     risk:   "Dashed lines mark medium (40) and high (70) risk thresholds",
     cost:   "Lower cost = better outcome — green bar is the recommended scenario",
+    carbon: "Lower carbon footprint = cleaner route option (ECO friendly)",
     impact: "Higher impact = greater deviation from base; monitor carefully",
     radar:  "Smaller polygon area = better overall scenario performance",
   };
@@ -322,6 +348,7 @@ function ScenarioCharts({ original, simulated, scNames, bestIdx }) {
         scNames={scNames}
         riskData={riskData}
         costData={costData}
+        carbonData={carbonData}
         impactData={impactData}
         barColors={barColors}
         radarData={radarData}
@@ -335,7 +362,7 @@ function ScenarioCharts({ original, simulated, scNames, bestIdx }) {
 
 // ─── Chart.js canvas components ────────────────────────
 
-function CJSBarRadarChart({ tab, scNames, riskData, costData, impactData, barColors, radarData, bestIdx }) {
+function CJSBarRadarChart({ tab, scNames, riskData, costData, carbonData, impactData, barColors, radarData, bestIdx }) {
   const canvasRef = useRef(null);
   const chartRef  = useRef(null);
 
@@ -381,6 +408,16 @@ function CJSBarRadarChart({ tab, scNames, riskData, costData, impactData, barCol
           x: { grid: { display: false }, border: { display: false }, ticks: TICK },
         }},
       };
+    } else if (tab === "carbon") {
+      const cColors = scNames.map((_, i) => i === 0 ? "#a7f3d0" : i - 1 === bestIdx ? "#10b981" : SC_PALETTE[Math.min(i, SC_PALETTE.length - 1)]);
+      config = {
+        type: "bar",
+        data: { labels: scNames, datasets: [{ label: "Carbon (kg CO₂)", data: carbonData, backgroundColor: cColors, borderRadius: 6, borderSkipped: false }] },
+        options: { ...BASE_OPT, scales: {
+          y: { beginAtZero: true, grid: { color: GRID }, border: { display: false }, ticks: { ...TICK, callback: v => v + " kg" } },
+          x: { grid: { display: false }, border: { display: false }, ticks: TICK },
+        }},
+      };
     } else if (tab === "impact") {
       const iColors = impactData.map((v, i) => i === 0 ? "#93c5fd" : v > 30 ? "#f87171" : v > 15 ? "#fbbf24" : "#4ade80");
       config = {
@@ -416,7 +453,7 @@ function CJSBarRadarChart({ tab, scNames, riskData, costData, impactData, barCol
     if (config) chartRef.current = new Chart(canvasRef.current, config);
 
     return () => { if (chartRef.current) { chartRef.current.destroy(); chartRef.current = null; } };
-  }, [tab, scNames, riskData, costData, impactData, barColors, radarData, bestIdx]);
+  }, [tab, scNames, riskData, costData, carbonData, impactData, barColors, radarData, bestIdx]);
 
   return (
     <div className={`relative w-full ${tab === "radar" ? 'h-[280px]' : 'h-[250px]'}`}>
@@ -588,14 +625,14 @@ function MetricGrid({ items }) {
   );
 }
 
-function DiffCell({ label, val, prefix = "", text, wide }) {
+function DiffCell({ label, val, prefix = "", suffix = "", text, wide }) {
   const dir   = val > 0 ? "▲" : val < 0 ? "▼" : "—";
   const colorClass = val > 0 ? "text-red-600" : val < 0 ? "text-green-600" : "text-slate-500";
   return (
-    <div className={`bg-slate-50 border border-slate-100 rounded-lg py-2 px-3 ${wide ? 'col-span-2' : ''}`}>
+    <div className={`bg-slate-50 border border-slate-100 rounded-lg py-2 px-3 ${wide ? 'sm:col-span-3' : ''}`}>
       <div className="text-[11px] text-slate-500">{label}</div>
       <div className={`text-[13px] font-semibold mt-0.5 ${text ? 'text-slate-600' : colorClass}`}>
-        {text ?? `${prefix}${val > 0 ? "+" : ""}${val} ${dir}`}
+        {text ?? `${prefix}${val > 0 ? "+" : ""}${val}${suffix} ${dir}`}
       </div>
     </div>
   );

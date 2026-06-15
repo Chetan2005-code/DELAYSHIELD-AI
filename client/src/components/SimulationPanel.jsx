@@ -9,8 +9,11 @@ function simulateLocally(traffic, delay, priority) {
   const risk = Math.min(99, Math.round((traffic * 0.4 + delay * 0.6) * priorityMultiplier * 0.5));
   const cost = Math.round(traffic * 12 + delay * 8 + risk * 15);
   const decision = risk >= 70 ? 'REROUTE' : risk >= 40 ? 'MONITOR' : 'PROCEED';
+  const distanceKm = 210;
+  const carbonTotal = Math.round(distanceKm * 0.95 + delay * 0.15);
+  const ecoBadge = carbonTotal < 150 ? 'Eco Friendly' : carbonTotal > 400 ? 'High Emission' : 'Moderate';
 
-  return { risk, cost, decision };
+  return { risk, cost, decision, carbon: { totalCO2: carbonTotal, ecoBadge } };
 }
 
 let nextScenarioId = 3;
@@ -18,17 +21,17 @@ let nextScenarioId = 3;
 export default function SimulationPanel() {
   const navigate = useNavigate();
   const { startNavigation } = useNavigationLoading();
-  const [baseInput, setBaseInput] = useState({ traffic: 60, delay: 30, priority: 'MEDIUM' });
+  const [baseInput, setBaseInput] = useState({ traffic: 60, delay: 30, weather: 25, priority: 'MEDIUM' });
   const [scenarios, setScenarios] = useState([
-    { id: 1, traffic: 100, delay: '' },
-    { id: 2, traffic: '', delay: 80 },
+    { id: 1, traffic: 100, delay: '', weather: '' },
+    { id: 2, traffic: '', delay: 80, weather: '' },
   ]);
   const [stressMode, setStressMode] = useState(false);
   const [loading, setLoading] = useState(false);
   const [apiNote, setApiNote] = useState('');
 
   const addScenario = () => {
-    setScenarios((prev) => [...prev, { id: nextScenarioId++, traffic: '', delay: '' }]);
+    setScenarios((prev) => [...prev, { id: nextScenarioId++, traffic: '', delay: '', weather: '' }]);
   };
 
   const removeScenario = (id) => {
@@ -53,6 +56,7 @@ export default function SimulationPanel() {
         ? (stressMode ? Math.round(scenario.traffic * 1.5) : scenario.traffic)
         : (stressMode ? Math.round(baseInput.traffic * 1.5) : baseInput.traffic),
       delay: scenario.delay !== '' ? scenario.delay : baseInput.delay,
+      weather: scenario.weather !== '' ? scenario.weather : baseInput.weather,
       priority: baseInput.priority,
     }));
 
@@ -69,13 +73,15 @@ export default function SimulationPanel() {
         difference: {
           risk: scenario.risk - original.risk,
           cost: scenario.cost - original.cost,
+          carbon: scenario.carbon.totalCO2 - original.carbon.totalCO2,
           decisionChange: scenario.decision !== original.decision
             ? `${original.decision} -> ${scenario.decision}`
             : null,
         },
         impactScore: Math.round(
           Math.abs(scenario.risk - original.risk) * 0.6
-          + Math.abs(scenario.cost - original.cost) * 0.0004 * 40,
+          + Math.abs(scenario.cost - original.cost) * 0.0004 * 40
+          + Math.abs(scenario.carbon.totalCO2 - original.carbon.totalCO2) * 0.5,
         ),
       }));
 
@@ -112,7 +118,7 @@ export default function SimulationPanel() {
 
       <SectionLabel>A. Base input</SectionLabel>
       <div className="glass-panel p-4 sm:p-5 mb-7">
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
           <Field label="Traffic">
             <input
               className="w-full bg-slate-50 border border-slate-200 rounded-md px-3 py-2 text-sm text-blue-950 focus:outline-none focus:border-blue-400"
@@ -131,6 +137,16 @@ export default function SimulationPanel() {
               min={0}
               max={500}
               onChange={(event) => setBaseInput((prev) => ({ ...prev, delay: parseFloat(event.target.value) || 0 }))}
+            />
+          </Field>
+          <Field label="Weather (%)">
+            <input
+              className="w-full bg-slate-50 border border-slate-200 rounded-md px-3 py-2 text-sm text-blue-950 focus:outline-none focus:border-blue-400"
+              type="number"
+              value={baseInput.weather}
+              min={0}
+              max={100}
+              onChange={(event) => setBaseInput((prev) => ({ ...prev, weather: parseFloat(event.target.value) || 0 }))}
             />
           </Field>
           <Field label="Priority">
@@ -179,7 +195,7 @@ export default function SimulationPanel() {
               )}
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <Field label="Traffic override">
                 <input
                   className="w-full bg-slate-50 border border-slate-200 rounded-md px-3 py-2 text-sm text-blue-950 focus:outline-none focus:border-blue-400"
@@ -200,6 +216,17 @@ export default function SimulationPanel() {
                   onChange={(event) => updateScenario(scenario.id, 'delay', event.target.value)}
                   min={0}
                   max={500}
+                />
+              </Field>
+              <Field label="Weather override (%)">
+                <input
+                  className="w-full bg-slate-50 border border-slate-200 rounded-md px-3 py-2 text-sm text-blue-950 focus:outline-none focus:border-blue-400"
+                  type="number"
+                  placeholder={`inherit (${baseInput.weather}%)`}
+                  value={scenario.weather}
+                  onChange={(event) => updateScenario(scenario.id, 'weather', event.target.value)}
+                  min={0}
+                  max={100}
                 />
               </Field>
             </div>

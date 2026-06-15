@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from 'react';
+import { Link } from 'react-router-dom';
 import { 
   Package, Search, Filter, ChevronLeft, ChevronRight, 
   Truck, Ship, Plane, Train, ArrowUpDown, Plus, X, Loader2
@@ -324,7 +325,9 @@ const ShipmentsPage = () => {
                     <tr key={row.id} className="hover:bg-blue-50/50 transition-colors border-b border-slate-50 last:border-0 group">
                       <td className="p-4 font-bold text-slate-700">
                         <div className="flex items-center gap-2">
-                          {row.id}
+                          <Link to={`/shipment/${row.id}`} className="text-blue-600 hover:underline">
+                            {row.id}
+                          </Link>
                           {row.isDemo && (
                             <span className="px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider bg-purple-100 text-purple-700 border border-purple-200">
                               Demo

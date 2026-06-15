@@ -111,6 +111,67 @@ const AIAnalysisModal = ({ isOpen, onClose, analysis, shipment }) => {
                       ))}
                     </div>
                   </div>
+
+                  {/* Carbon Shield (ESG) */}
+                  <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-200">
+                    <div className="flex justify-between items-center mb-4">
+                      <h4 className="text-xs font-bold uppercase tracking-widest text-slate-400">🌱 Carbon Shield (ESG)</h4>
+                      <span className={`text-[10px] font-black uppercase px-2 py-0.5 rounded ${
+                        (analysis.carbonImpact?.ecoBadge || shipment?.carbonImpact?.ecoBadge) === 'Eco Friendly' ? 'bg-emerald-100 text-emerald-700' :
+                        (analysis.carbonImpact?.ecoBadge || shipment?.carbonImpact?.ecoBadge) === 'Moderate' ? 'bg-amber-100 text-amber-700' : 'bg-red-100 text-red-700'
+                      }`}>
+                        {analysis.carbonImpact?.ecoBadge || shipment?.carbonImpact?.ecoBadge || 'Moderate'}
+                      </span>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4 mb-4">
+                      <div>
+                        <div className="text-xs text-slate-500 font-semibold">Total Footprint</div>
+                        <div className="text-2xl font-black text-slate-800 mt-1">
+                          {analysis.carbonImpact?.totalCO2 || shipment?.carbonImpact?.totalCO2 || 0} <span className="text-xs font-bold text-slate-500">kg CO₂</span>
+                        </div>
+                      </div>
+                      <div>
+                        <div className="text-xs text-slate-500 font-semibold">Sustainability Score</div>
+                        <div className="text-2xl font-black text-emerald-600 mt-1">
+                          {Math.round(analysis.carbonImpact?.sustainabilityScore || shipment?.carbonImpact?.sustainabilityScore || 85)}%
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Progress Bar */}
+                    <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden mb-4">
+                      <div 
+                        className={`h-full ${(analysis.carbonImpact?.ecoBadge || shipment?.carbonImpact?.ecoBadge) === 'Eco Friendly' ? 'bg-emerald-500' : (analysis.carbonImpact?.ecoBadge || shipment?.carbonImpact?.ecoBadge) === 'Moderate' ? 'bg-amber-500' : 'bg-red-500'}`} 
+                        style={{ width: `${Math.round(analysis.carbonImpact?.sustainabilityScore || shipment?.carbonImpact?.sustainabilityScore || 85)}%` }}
+                      ></div>
+                    </div>
+
+                    <div className="space-y-2 text-xs border-t border-slate-100 pt-3">
+                      <div className="flex justify-between">
+                        <span className="text-slate-500 font-medium">Transit Emissions:</span>
+                        <span className="font-bold text-slate-700">{analysis.carbonImpact?.transitEmission || shipment?.carbonImpact?.transitEmission || 0} kg</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-slate-500 font-medium">Idling / Delay Emissions:</span>
+                        <span className="font-bold text-slate-700">{analysis.carbonImpact?.delayEmission || shipment?.carbonImpact?.delayEmission || 0} kg</span>
+                      </div>
+                      <div className="flex justify-between text-emerald-600">
+                        <span className="font-semibold">Offset Potential:</span>
+                        <span className="font-black">-{analysis.carbonImpact?.emissionSaved || shipment?.carbonImpact?.emissionSaved || 0} kg CO₂</span>
+                      </div>
+                    </div>
+
+                    {(analysis.recovery?.suggestedEcoRoute || analysis.recovery?.suggestedRoute) && (
+                      <div className="mt-4 bg-emerald-50 border border-emerald-100 rounded-xl p-3 text-xs">
+                        <div className="font-bold text-emerald-900 mb-1 flex items-center gap-1.5">
+                          <span>🌍 Cleanest Route (AI suggested)</span>
+                        </div>
+                        <p className="font-black text-emerald-700 mb-1">{analysis.recovery.suggestedEcoRoute || analysis.recovery.suggestedRoute}</p>
+                        <p className="text-emerald-600 text-[11px] leading-snug">{analysis.recovery.ecoSavingsExplanation || 'Reduces idling emissions in congestion hotspots.'}</p>
+                      </div>
+                    )}
+                  </div>
                 </div>
 
                 {/* Right Column: Recovery & Financials */}
